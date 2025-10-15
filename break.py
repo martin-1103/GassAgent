@@ -15,6 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import random
 
 # Import our classes
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -34,19 +35,16 @@ except ImportError as e:
 class BreakdownLoop:
     """Main breakdown loop system using PhaseManager and ClaudeStreamer."""
 
-    def __init__(self, plan_dir: str = ".ai/plan", prompt_tmp_dir: str = "prompt_tmp", prompt_template_dir: str = "prompt_template", max_workers: int = 1):
+    def __init__(self, max_workers: int = 1):
         """
         Initialize BreakdownLoop
 
         Args:
-            plan_dir: Directory containing plan JSON files
-            prompt_tmp_dir: Directory for temporary prompt files
-            prompt_template_dir: Directory for prompt templates
             max_workers: Number of parallel workers for processing phases
         """
-        self.plan_dir = Path(plan_dir)
-        self.prompt_tmp_dir = Path(prompt_tmp_dir)
-        self.prompt_template_dir = Path(prompt_template_dir)
+        self.plan_dir = Path(".ai/plan")
+        self.prompt_tmp_dir = Path("prompt_tmp")
+        self.prompt_template_dir = Path("prompt_template")
         self.max_workers = max_workers
 
         # Initialize managers
@@ -216,38 +214,65 @@ Please proceed with the breakdown now.
 
     def _print_statistics(self):
         """Print current statistics."""
-        log = self.breakdown_log
         print(f"\n[STATISTICS]:")
-        print(f"   Total processed: {log['total_processed']}")
-        print(f"   Successful: {log['successful_breakdowns']}")
-        print(f"   Failed: {log['failed_breakdowns']}")
-        if log['last_run']:
-            print(f"   Last run: {log['last_run']}")
+        print(f"   Total processed: {self.total_processed}")
+        print(f"   Successful: {self.successful_breakdowns}")
+        print(f"   Failed: {self.failed_breakdowns}")
+        if self.start_time:
+            elapsed = datetime.now() - self.start_time
+            print(f"   Elapsed time: {elapsed}")
 
-    def run_loop(self, reset: bool = False, max_iterations: int = 50):
+    def _process_phase_worker(self, phase_info: Dict[str, Any], worker_id: int) -> Dict[str, Any]:
         """
-        Run the main breakdown loop.
+        Worker function to process a single phase.
 
         Args:
-            reset: Clear log and start fresh
+            phase_info: Information about the phase to breakdown
+            worker_id: ID of the worker processing this phase
+
+        Returns:
+            Result dictionary with success status and details
+        """
+        print(f"[WORKER-{worker_id}] Starting Phase {phase_info['phase_id']}: {phase_info['title']}")
+
+        # Add small random delay to prevent all workers hitting Claude at once
+        if self.max_workers > 1:
+            initial_delay = random.uniform(0.1, 0.5) * worker_id
+            if initial_delay > 0:
+                print(f"[WORKER-{worker_id}] Delaying {initial_delay:.1f}s to prevent rate limiting...")
+                time.sleep(initial_delay)
+
+        # Call breakdown agent
+        result = self._call_breakdown_agent(phase_info)
+
+        # Update statistics
+        self._update_statistics(result["success"])
+
+        # Show result
+        if result["success"]:
+            print(f"[WORKER-{worker_id}] [OK] Completed Phase {phase_info['phase_id']}")
+        else:
+            print(f"[WORKER-{worker_id}] [ERROR] Failed Phase {phase_info['phase_id']}: {result.get('error', 'Unknown error')}")
+
+        return result
+
+    def run_loop(self, max_iterations: int = 50):
+        """
+        Run the main breakdown loop with parallel processing.
+
+        Args:
             max_iterations: Maximum number of iterations to prevent infinite loops
         """
-        if reset:
-            print("[RESET] Resetting breakdown log...")
-            self.breakdown_log = {
-                "start_time": datetime.now().isoformat(),
-                "last_run": None,
-                "total_processed": 0,
-                "successful_breakdowns": 0,
-                "failed_breakdowns": 0,
-                "sessions": []
-            }
-            self._save_log()
-            print("   [OK] Log reset complete")
+        if not self.start_time:
+            self.start_time = datetime.now()
+            self.total_processed = 0
+            self.successful_breakdowns = 0
+            self.failed_breakdowns = 0
 
         print(f"\n[START] Starting Breakdown Loop")
         print(f"   Plan directory: {self.plan_dir}")
         print(f"   Prompt temp directory: {self.prompt_tmp_dir}")
+        print(f"   Max workers: {self.max_workers}")
         print(f"   Max iterations: {max_iterations}")
 
         iteration = 0
@@ -258,7 +283,7 @@ Please proceed with the breakdown now.
             print(f"{'='*60}")
 
             # Find phases needing breakdown
-            phases_needing_breakdown = self.phase_manager.find_phases_needing_breakdown(limit=20)
+            phases_needing_breakdown = self.phase_manager.find_phases_needing_breakdown(limit=50)
 
             if not phases_needing_breakdown:
                 print("[SUCCESS] No phases with duration >60 minutes need breakdown!")
@@ -285,69 +310,56 @@ Please proceed with the breakdown now.
                     print(f"     Duration: {phase['duration']} minutes | Status: {phase['status']}")
                     self.phase_manager.log_duration_check(phase['phase_id'], phase['duration'])
 
-            # Process first phase
-            first_phase = phases_needing_breakdown[0]
-            print(f"\n[PROCESSING] Phase {first_phase['phase_id']} ({first_phase['title']})")
+            # Process phases in parallel
+            print(f"\n[PARALLEL] Processing {len(phases_needing_breakdown)} phases with {self.max_workers} workers...")
 
-            # Call breakdown agent
-            result = self._call_breakdown_agent(first_phase)
+            # Determine number of phases to process in this batch
+            # Process up to max_workers phases per iteration
+            phases_to_process = phases_needing_breakdown[:self.max_workers]
 
-            # Update log
-            self._update_log(result)
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                # Submit all phases to workers
+                future_to_phase = {
+                    executor.submit(self._process_phase_worker, phase, i+1): phase
+                    for i, phase in enumerate(phases_to_process)
+                }
 
-            # Show result
-            if result["success"]:
-                print(f"   [OK] Breakdown completed for phase {first_phase['phase_id']}")
-            else:
-                print(f"   [ERROR] Breakdown failed for phase {first_phase['phase_id']}: {result.get('error', 'Unknown error')}")
+                # Wait for all to complete
+                for future in as_completed(future_to_phase):
+                    phase = future_to_phase[future]
+                    try:
+                        result = future.result()
+                        # Results are already handled in _process_phase_worker
+                    except Exception as e:
+                        print(f"[ERROR] Worker exception for phase {phase['phase_id']}: {e}")
+                        self._update_statistics(False)
 
-            # Brief pause between iterations
-            time.sleep(2)
+            print(f"\n[BATCH] Completed batch. Processed {len(phases_to_process)} phases.")
+            self._print_statistics()
 
         else:
             print(f"\n[STOP] Maximum iterations ({max_iterations}) reached. Stopping loop.")
             self._print_statistics()
 
-        print(f"\n[LOG] Final breakdown log saved to: {self.log_file}")
+        print(f"\n[DONE] Breakdown loop finished!")
 
 
 def main():
     """Main CLI interface."""
     parser = argparse.ArgumentParser(description="Breakdown Loop - Automated Phase Breakdown System")
-    parser.add_argument("--plan-dir", default=".ai/plan",
-                       help="Plan directory path (default: .ai/plan)")
-    parser.add_argument("--prompt-dir", default="prompt_tmp",
-                       help="Prompt temporary directory (default: prompt_tmp)")
-    parser.add_argument("--template-dir", default="prompt_template",
-                       help="Prompt template directory (default: prompt_template)")
-    parser.add_argument("--reset", action="store_true",
-                       help="Reset breakdown log and start fresh")
     parser.add_argument("--max-iterations", type=int, default=50,
                        help="Maximum iterations to prevent infinite loops (default: 50)")
     parser.add_argument("--workers", type=int, default=1,
                        help="Number of parallel workers for processing phases (default: 1)")
-    parser.add_argument("--stats-only", action="store_true",
-                       help="Show only current statistics")
 
     args = parser.parse_args()
 
     # Initialize breakdown loop
-    breakdown_loop = BreakdownLoop(
-        plan_dir=args.plan_dir,
-        prompt_tmp_dir=args.prompt_dir,
-        prompt_template_dir=args.template_dir
-    )
-
-    if args.stats_only:
-        breakdown_loop._print_statistics()
-        return
+    breakdown_loop = BreakdownLoop(max_workers=args.workers)
 
     # Run the loop
     try:
-        breakdown_loop.run_loop(
-            reset=args.reset,
-            max_iterations=args.max_iterations
-        )
+        breakdown_loop.run_loop(max_iterations=args.max_iterations)
     except KeyboardInterrupt:
         print(f"\n\n[INTERRUPTED] Breakdown interrupted by user")
         breakdown_loop._print_statistics()
