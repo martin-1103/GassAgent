@@ -46,14 +46,26 @@ class PhaseManager:
             return False
 
     def get_all_plan_files(self) -> List[str]:
-        """Get all plan JSON files (excluding phases.json)"""
+        """Get all plan JSON files (recursive scan, excluding phases.json and index.json)"""
         if not os.path.exists(self.plan_dir):
             return []
 
         files = []
-        for item in os.listdir(self.plan_dir):
-            if item.endswith('.json') and item != 'phases.json':
-                files.append(os.path.join(self.plan_dir, item))
+
+        def scan_directory(dir_path):
+            try:
+                for item in os.listdir(dir_path):
+                    full_path = os.path.join(dir_path, item)
+
+                    if os.path.isdir(full_path):
+                        scan_directory(full_path)  # Recursive scan
+                    elif item.endswith('.json') and item != 'index.json':
+                        files.append(full_path)
+            except (OSError, PermissionError):
+                # Skip directories we can't access
+                pass
+
+        scan_directory(self.plan_dir)
         return sorted(files)
 
     def get_priority_value(self, priority) -> int:
@@ -64,7 +76,7 @@ class PhaseManager:
         return priority or 999
 
     def needs_breakdown(self, duration) -> bool:
-        """Check if duration > 60 minutes"""
+        """Check if duration > 60 minutes (matches JavaScript needsBreakdown)"""
         if not duration:
             return False
 
@@ -79,6 +91,13 @@ class PhaseManager:
             # Single value: "960"
             minutes = int(duration_str)
             return minutes > 60
+
+    def log_duration_check(self, phase_id: str, duration) -> bool:
+        """Log duration check result (matches JavaScript logDurationCheck)"""
+        needs_break = self.needs_breakdown(duration)
+        result = "OK needs breakdown" if needs_break else "NO no breakdown"
+        print(f"Phase {phase_id}: {duration} minutes -> {result}")
+        return needs_break
 
     def is_leaf_phase(self, file_path: str, all_files: List[str]) -> bool:
         """Check if phase is leaf (no child files)"""
@@ -157,8 +176,8 @@ class PhaseManager:
 
     # ==================== FINDER METHODS ====================
 
-    def get_all_leaf_tasks(self) -> List[Dict[str, Any]]:
-        """Get all leaf tasks that can be worked on"""
+    def get_workable_phases(self) -> List[Dict[str, Any]]:
+        """Get workable phases that can be worked on"""
         if not os.path.exists(self.plan_dir):
             return []
 
@@ -230,121 +249,62 @@ class PhaseManager:
         tasks.sort(key=lambda x: (x['priority'], x['id']))
         return tasks
 
-    def get_leaf_tasks_for_phase(self, phase_id: str) -> List[Dict[str, Any]]:
-        """Get leaf tasks for specific phase"""
-        tasks = []
-
-        # First try individual file
-        individual_file = os.path.join(self.plan_dir, f"{phase_id}.json")
-        if os.path.exists(individual_file):
-            data = self.load_json(individual_file)
-
-            if data.get('title'):
-                phases = data.get('phases', [])
-                if phases:
-                    # Process sub-phases
-                    for sub_phase in phases:
-                        if not self.is_true_leaf_phase(sub_phase):
-                            continue
-
-                        deps_completed = self.are_dependencies_completed(sub_phase.get('dependencies', []))
-                        is_pending = sub_phase.get('status') == 'pending'
-
-                        if deps_completed and is_pending:
-                            task = {
-                                'id': sub_phase['id'],
-                                'title': sub_phase['title'],
-                                'description': sub_phase.get('description', ''),
-                                'duration': sub_phase.get('duration'),
-                                'priority': self.get_priority_value(sub_phase.get('priority')),
-                                'parent_id': phase_id,
-                                'parent_status': data.get('status'),
-                                'status': sub_phase.get('status'),
-                                'dependencies': sub_phase.get('dependencies', []),
-                                'deliverables': sub_phase.get('deliverables', []),
-                                'is_leaf': True
-                            }
-                            tasks.append(task)
-                else:
-                    # This is a direct phase (no sub-phases)
-                    deps_completed = self.are_dependencies_completed(data.get('dependencies', []))
-                    is_pending = data.get('status') == 'pending'
-
-                    if deps_completed and is_pending:
-                        task = {
-                            'id': data['id'],
-                            'title': data['title'],
-                            'description': data.get('description', ''),
-                            'duration': data.get('duration'),
-                            'priority': self.get_priority_value(data.get('priority')),
-                            'parent_id': None,
-                            'parent_status': None,
-                            'status': data.get('status'),
-                            'dependencies': data.get('dependencies', []),
-                            'deliverables': data.get('deliverables', []),
-                            'is_leaf': True
-                        }
-                        tasks.append(task)
-
-        # Then try phases.json
-        phases_file = os.path.join(self.plan_dir, 'phases.json')
-        if os.path.exists(phases_file):
-            data = self.load_json(phases_file)
-            phases = data.get('phases', [])
-
-            for phase in phases:
-                if str(phase['id']) == str(phase_id):
-                    deps_completed = self.are_dependencies_completed(phase.get('dependencies', []))
-                    is_pending = phase.get('status') == 'pending'
-
-                    if deps_completed and is_pending:
-                        task = {
-                            'id': phase['id'],
-                            'title': phase['title'],
-                            'description': phase.get('description', ''),
-                            'duration': phase.get('duration'),
-                            'priority': self.get_priority_value(phase.get('priority')),
-                            'parent_id': None,
-                            'parent_status': None,
-                            'status': phase.get('status'),
-                            'dependencies': phase.get('dependencies', []),
-                            'deliverables': phase.get('deliverables', []),
-                            'is_leaf': True
-                        }
-                        tasks.append(task)
-
-        # Sort by priority then by ID
-        tasks.sort(key=lambda x: (x['priority'], x['id']))
-        return tasks
-
-    def find_leaf_phases(self, limit: int = 20) -> List[Dict[str, Any]]:
-        """Find leaf phases with duration > 60 minutes"""
-        all_files = self.get_all_plan_files()
-        leaf_phases = []
-
-        for file_path in all_files:
-            if not self.is_leaf_phase(file_path, all_files):
-                continue
-
+    
+    def parse_phase_data(self, file_path: str) -> Optional[Dict[str, Any]]:
+        """Parse phase data from file (matches JavaScript parsePhaseData)"""
+        try:
             data = self.load_json(file_path)
-            if not data or not data.get('title'):
-                continue
+            if not data:
+                return None
 
-            phases = data.get('phases', [])
-            if not phases:
-                continue
-
-            file_name = os.path.basename(file_path)
-            for phase in phases:
-                if phase.get('duration') and self.needs_breakdown(phase.get('duration')):
-                    leaf_phases.append({
-                        'file': file_name,
-                        'phase_id': phase.get('id', 'No ID'),
+            phases = []
+            if data.get('phases') and isinstance(data['phases'], list):
+                for phase in data['phases']:
+                    phases.append({
+                        'id': phase.get('id', 'undefined'),
                         'title': phase.get('title', 'No title'),
                         'duration': phase.get('duration', '0'),
                         'status': phase.get('status', 'pending')
                     })
 
+            return {
+                'file_path': file_path,
+                'file_name': os.path.basename(file_path),
+                'phases': phases,
+                'breakdown_complete': data.get('breakdown_complete', False)
+            }
+        except Exception as e:
+            print(f"Error parsing {file_path}: {e}")
+            return None
+
+    def find_phases_needing_breakdown(self, limit: int = 20) -> List[Dict[str, Any]]:
+        """Find phases with duration > 60 minutes that need breakdown"""
+        all_files = self.get_all_plan_files()
+        leaf_phases = []
+        processed_files = []
+
+        for file_path in all_files:
+            if not self.is_leaf_phase(file_path, all_files):
+                continue
+
+            phase_data = self.parse_phase_data(file_path)
+            if not phase_data or not phase_data['phases']:
+                continue
+
+            processed_files.append(phase_data)
+
+            # Check each phase in phases array (matches JavaScript logic)
+            for phase in phase_data['phases']:
+                if phase.get('duration') and self.needs_breakdown(phase.get('duration')):
+                    leaf_phases.append({
+                        'file': phase_data['file_name'],
+                        'phase_id': phase.get('id', 'No ID'),
+                        'title': phase['title'],
+                        'duration': phase['duration'],
+                        'status': phase.get('status', 'pending')
+                    })
+
+        # Filter to show only top results (matches JavaScript limit)
         return leaf_phases[:limit]
 
     # ==================== STATUS UPDATE METHODS ====================
@@ -466,7 +426,7 @@ class PhaseManager:
         limited_tasks = tasks[:limit]
 
         if not limited_tasks:
-            return "No leaf tasks available."
+            return "No workable phases available."
 
         result = []
         for i, task in enumerate(limited_tasks, 1):
@@ -480,12 +440,12 @@ class PhaseManager:
 
         return "\n".join(result)
 
-    def format_leaf_phases(self, phases: List[Dict[str, Any]]) -> str:
-        """Format leaf phases with duration >60min"""
+    def format_phases_needing_breakdown(self, phases: List[Dict[str, Any]]) -> str:
+        """Format phases with duration >60min that need breakdown"""
         if not phases:
-            return "SUCCESS: No leaf phases with duration >60 minutes!"
+            return "SUCCESS: No phases with duration >60 minutes need breakdown!"
 
-        result = [f"FOUND: {len(phases)} leaf phases with duration >60 minutes\n"]
+        result = [f"FOUND: {len(phases)} phases with duration >60 minutes need breakdown\n"]
 
         # Group by file
         grouped = {}
