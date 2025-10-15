@@ -165,6 +165,13 @@ Please proceed with the breakdown now.
 
         # Call Claude via ClaudeStreamer - gunakan @file syntax
         print(f"   Sending to Claude...")
+
+        # Initialize response variables
+        response_text = ""
+        exit_code = -1
+        success = False
+        error_msg = ""
+
         try:
             # Kirim prompt file langsung dengan @file syntax
             response_text, exit_code = self.claude_streamer.get_response_from_file(prompt_file)
@@ -173,34 +180,37 @@ Please proceed with the breakdown now.
 
             if exit_code == 0:
                 print(f"   [OK] Claude response received")
-
-                # Clean up prompt file
-                try:
-                    os.remove(prompt_file)
-                except:
-                    pass
-
-                return {
-                    "success": True,
-                    "response": response_text,
-                    "phase_id": phase_info['phase_id'],
-                    "prompt_file": prompt_file
-                }
+                success = True
             else:
                 print(f"   [ERROR] Claude error (exit code: {exit_code})")
                 print(f"   [DEBUG] Response: {response_text[:500]}")
-                return {
-                    "success": False,
-                    "error": f"Claude returned exit code {exit_code}",
-                    "response": response_text,
-                    "phase_id": phase_info['phase_id']
-                }
+                error_msg = f"Claude returned exit code {exit_code}"
 
         except Exception as e:
             print(f"   [ERROR] Exception calling Claude: {e}")
+            error_msg = f"Exception: {e}"
+
+        finally:
+            # Always clean up prompt file regardless of success/failure
+            try:
+                os.remove(prompt_file)
+                print(f"   [CLEANUP] Removed prompt file: {prompt_file}")
+            except Exception as cleanup_error:
+                print(f"   [WARNING] Failed to remove prompt file: {cleanup_error}")
+
+        # Return result
+        if success:
+            return {
+                "success": True,
+                "response": response_text,
+                "phase_id": phase_info['phase_id'],
+                "prompt_file": prompt_file
+            }
+        else:
             return {
                 "success": False,
-                "error": f"Exception: {e}",
+                "error": error_msg,
+                "response": response_text,
                 "phase_id": phase_info['phase_id']
             }
 
