@@ -1,0 +1,160 @@
+{
+  "table_name": "users",
+  "description": "Tabel utama untuk menyimpan data user yang mencakup informasi login dan status akun",
+  "phase": "phase_1",
+  "columns": {
+    "id": {
+      "type": "BIGINT",
+      "unsigned": true,
+      "auto_increment": true,
+      "primary_key": true,
+      "description": "Primary key untuk tabel users"
+    },
+    "username": {
+      "type": "VARCHAR(50)",
+      "unique": true,
+      "not_null": true,
+      "description": "Username unik untuk login",
+      "validation": {
+        "min_length": 3,
+        "max_length": 50,
+        "pattern": "^[a-zA-Z0-9_]+$"
+      }
+    },
+    "email": {
+      "type": "VARCHAR(100)",
+      "unique": true,
+      "not_null": true,
+      "description": "Email unik untuk login dan notifikasi",
+      "validation": {
+        "format": "email"
+      }
+    },
+    "password_hash": {
+      "type": "VARCHAR(255)",
+      "not_null": true,
+      "description": "Password yang sudah di-hash dengan bcrypt",
+      "security": {
+        "encryption": "bcrypt",
+        "cost": 12,
+        "storage": "hash_only"
+      }
+    },
+    "status": {
+      "type": "ENUM('active', 'inactive', 'suspended', 'pending_verification')",
+      "default": "pending_verification",
+      "not_null": true,
+      "description": "Status akun user",
+      "security": {
+        "access_control": "admin_only"
+      }
+    },
+    "email_verified": {
+      "type": "BOOLEAN",
+      "default": false,
+      "not_null": true,
+      "description": "Status verifikasi email"
+    },
+    "email_verification_token": {
+      "type": "VARCHAR(255)",
+      "nullable": true,
+      "description": "Token untuk verifikasi email",
+      "security": {
+        "temporary": true,
+        "expiry": "24h"
+      }
+    },
+    "last_login_at": {
+      "type": "TIMESTAMP",
+      "nullable": true,
+      "description": "Waktu login terakhir"
+    },
+    "login_attempts": {
+      "type": "INT",
+      "unsigned": true,
+      "default": 0,
+      "not_null": true,
+      "description": "Jumlah percobaan login gagal",
+      "security": {
+        "max_attempts": 5,
+        "lockout_duration": "15m"
+      }
+    },
+    "locked_until": {
+      "type": "TIMESTAMP",
+      "nullable": true,
+      "description": "Waktu akun dibuka kembali setelah lockout"
+    },
+    "password_changed_at": {
+      "type": "TIMESTAMP",
+      "default": "CURRENT_TIMESTAMP",
+      "not_null": true,
+      "description": "Waktu password terakhir diubah"
+    },
+    "created_at": {
+      "type": "TIMESTAMP",
+      "default": "CURRENT_TIMESTAMP",
+      "not_null": true,
+      "description": "Waktu pembuatan record"
+    },
+    "updated_at": {
+      "type": "TIMESTAMP",
+      "default": "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+      "not_null": true,
+      "description": "Waktu terakhir update record"
+    }
+  },
+  "constraints": {
+    "unique_constraints": [
+      {
+        "name": "uk_users_username",
+        "columns": ["username"]
+      },
+      {
+        "name": "uk_users_email",
+        "columns": ["email"]
+      }
+    ],
+    "check_constraints": [
+      {
+        "name": "ck_users_email_format",
+        "condition": "email REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'"
+      },
+      {
+        "name": "ck_users_username_format",
+        "condition": "username REGEXP '^[a-zA-Z0-9_]{3,50}$'"
+      }
+    ]
+  },
+  "security": {
+    "password_policy": {
+      "min_length": 8,
+      "require_uppercase": true,
+      "require_lowercase": true,
+      "require_numbers": true,
+      "require_special_chars": true
+    },
+    "account_lockout": {
+      "max_attempts": 5,
+      "lockout_duration_minutes": 15
+    },
+    "session_management": {
+      "max_concurrent_sessions": 3,
+      "session_timeout_hours": 24
+    }
+  },
+  "triggers": [
+    {
+      "name": "before_user_insert",
+      "timing": "BEFORE",
+      "event": "INSERT",
+      "logic": "Set default values and validate data"
+    },
+    {
+      "name": "after_user_update",
+      "timing": "AFTER",
+      "event": "UPDATE",
+      "logic": "Log important changes"
+    }
+  ]
+}

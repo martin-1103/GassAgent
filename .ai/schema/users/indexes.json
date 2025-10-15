@@ -1,0 +1,120 @@
+{
+  "table_name": "users",
+  "indexes": {
+    "primary": {
+      "name": "PRIMARY",
+      "type": "PRIMARY",
+      "columns": ["id"],
+      "description": "Primary key index"
+    },
+    "unique_indexes": [
+      {
+        "name": "uk_users_username",
+        "type": "UNIQUE",
+        "columns": ["username"],
+        "description": "Index untuk memastikan username unik dan optimasi login by username"
+      },
+      {
+        "name": "uk_users_email",
+        "type": "UNIQUE",
+        "columns": ["email"],
+        "description": "Index untuk memastikan email unik dan optimasi login by email"
+      }
+    ],
+    "single_column_indexes": [
+      {
+        "name": "idx_users_status",
+        "type": "INDEX",
+        "columns": ["status"],
+        "description": "Index untuk query berdasarkan status user (active, inactive, suspended)"
+      },
+      {
+        "name": "idx_users_email_verified",
+        "type": "INDEX",
+        "columns": ["email_verified"],
+        "description": "Index untuk query user yang sudah verify email"
+      },
+      {
+        "name": "idx_users_last_login_at",
+        "type": "INDEX",
+        "columns": ["last_login_at"],
+        "description": "Index untuk sorting by last login"
+      }
+    ],
+    "composite_indexes": [
+      {
+        "name": "idx_users_status_email_verified",
+        "type": "INDEX",
+        "columns": ["status", "email_verified"],
+        "description": "Index untuk query active verified users"
+      },
+      {
+        "name": "idx_users_status_last_login",
+        "type": "INDEX",
+        "columns": ["status", "last_login_at"],
+        "description": "Index untuk query active users dengan login terakhir"
+      },
+      {
+        "name": "idx_users_created_at_status",
+        "type": "INDEX",
+        "columns": ["created_at", "status"],
+        "description": "Index untuk query users by creation date dan status"
+      }
+    ],
+    "security_indexes": [
+      {
+        "name": "idx_users_email_verification_token",
+        "type": "INDEX",
+        "columns": ["email_verification_token"],
+        "description": "Index untuk lookup token verifikasi email",
+        "unique": false
+      },
+      {
+        "name": "idx_users_locked_until",
+        "type": "INDEX",
+        "columns": ["locked_until"],
+        "description": "Index untuk query locked users untuk unlock otomatis"
+      }
+    ],
+    "performance_indexes": [
+      {
+        "name": "idx_users_login_optimization",
+        "type": "INDEX",
+        "columns": ["email", "status", "locked_until"],
+        "description": "Composite index untuk optimasi query login"
+      }
+    ]
+  },
+  "index_analysis": {
+    "query_patterns": [
+      {
+        "query": "SELECT * FROM users WHERE email = ? AND status = 'active'",
+        "used_indexes": ["uk_users_email", "idx_users_status"],
+        "optimization": "Composite index lebih optimal"
+      },
+      {
+        "query": "SELECT * FROM users WHERE username = ? AND status = 'active'",
+        "used_indexes": ["uk_users_username", "idx_users_status"],
+        "optimization": "Composite index lebih optimal"
+      },
+      {
+        "query": "SELECT * FROM users WHERE email_verification_token = ?",
+        "used_indexes": ["idx_users_email_verification_token"],
+        "optimization": "Token lookup yang cepat"
+      }
+    ]
+  },
+  "maintenance": {
+    "rebuild_frequency": "monthly",
+    "monitoring": {
+      "unused_indexes": [
+        "idx_users_password_changed_at"
+      ],
+      "high_usage_indexes": [
+        "uk_users_email",
+        "uk_users_username",
+        "idx_users_status"
+      ]
+    }
+  }
+}

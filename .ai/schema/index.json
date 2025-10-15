@@ -1,0 +1,140 @@
+{
+  "project": "rbac-user-panel",
+  "database": {
+    "name": "rbac_user_panel",
+    "type": "relational",
+    "engine": "MySQL 8.0+",
+    "character_set": "utf8mb4",
+    "collation": "utf8mb4_unicode_ci"
+  },
+  "phases": {
+    "phase_1": {
+      "name": "Authentication Setup",
+      "duration": "Week 1",
+      "focus": "User authentication, JWT tokens, password security",
+      "tables": ["users", "user_sessions", "password_resets"]
+    },
+    "phase_2": {
+      "name": "User Management",
+      "duration": "Week 2",
+      "focus": "CRUD operations, user profiles, basic admin",
+      "tables": ["users", "user_profiles", "user_activities"]
+    },
+    "phase_3": {
+      "name": "Role System",
+      "duration": "Week 3",
+      "focus": "RBAC implementation, permissions, role assignment",
+      "tables": ["roles", "permissions", "role_permissions", "user_roles"]
+    },
+    "phase_4": {
+      "name": "Testing & Deployment",
+      "duration": "Week 4",
+      "focus": "Performance optimization, security hardening, deployment",
+      "tables": ["audit_logs", "system_settings"]
+    }
+  },
+  "tables": [
+    "users",
+    "user_profiles",
+    "user_sessions",
+    "password_resets",
+    "user_activities",
+    "roles",
+    "permissions",
+    "role_permissions",
+    "user_roles",
+    "audit_logs",
+    "system_settings"
+  ],
+  "key_tables": ["users", "roles", "permissions", "user_roles"],
+  "relationships": {
+    "users": {
+      "one_to_one": ["user_profiles"],
+      "one_to_many": ["user_sessions", "user_activities", "user_roles"],
+      "many_to_many": ["roles", "permissions"]
+    },
+    "roles": {
+      "many_to_many": ["users", "permissions"],
+      "one_to_many": ["role_permissions"]
+    },
+    "permissions": {
+      "many_to_many": ["roles", "users"]
+    }
+  },
+  "paths": {
+    "users": {
+      "entity": ".ai/schema/users/entity.json",
+      "relationships": ".ai/schema/users/relationships.json",
+      "indexes": ".ai/schema/users/indexes.json",
+      "ddl": ".ai/schema/ddl/users.sql"
+    },
+    "user_profiles": {
+      "entity": ".ai/schema/user_profiles/entity.json",
+      "relationships": ".ai/schema/user_profiles/relationships.json",
+      "indexes": ".ai/schema/user_profiles/indexes.json",
+      "ddl": ".ai/schema/ddl/user_profiles.sql"
+    },
+    "user_sessions": {
+      "entity": ".ai/schema/user_sessions/entity.json",
+      "relationships": ".ai/schema/user_sessions/relationships.json",
+      "indexes": ".ai/schema/user_sessions/indexes.json",
+      "ddl": ".ai/schema/ddl/user_sessions.sql"
+    },
+    "password_resets": {
+      "entity": ".ai/schema/password_resets/entity.json",
+      "relationships": ".ai/schema/password_resets/relationships.json",
+      "indexes": ".ai/schema/password_resets/indexes.json",
+      "ddl": ".ai/schema/ddl/password_resets.sql"
+    },
+    "user_activities": {
+      "entity": ".ai/schema/user_activities/entity.json",
+      "relationships": ".ai/schema/user_activities/relationships.json",
+      "indexes": ".ai/schema/user_activities/indexes.json",
+      "ddl": ".ai/schema/ddl/user_activities.sql"
+    },
+    "roles": {
+      "entity": ".ai/schema/roles/entity.json",
+      "relationships": ".ai/schema/roles/relationships.json",
+      "indexes": ".ai/schema/roles/indexes.json",
+      "ddl": ".ai/schema/ddl/roles.sql"
+    },
+    "permissions": {
+      "entity": ".ai/schema/permissions/entity.json",
+      "relationships": ".ai/schema/permissions/relationships.json",
+      "indexes": ".ai/schema/permissions/indexes.json",
+      "ddl": ".ai/schema/ddl/permissions.sql"
+    },
+    "role_permissions": {
+      "entity": ".ai/schema/role_permissions/entity.json",
+      "relationships": ".ai/schema/role_permissions/relationships.json",
+      "indexes": ".ai/schema/role_permissions/indexes.json",
+      "ddl": ".ai/schema/ddl/role_permissions.sql"
+    },
+    "user_roles": {
+      "entity": ".ai/schema/user_roles/entity.json",
+      "relationships": ".ai/schema/user_roles/relationships.json",
+      "indexes": ".ai/schema/user_roles/indexes.json",
+      "ddl": ".ai/schema/ddl/user_roles.sql"
+    },
+    "audit_logs": {
+      "entity": ".ai/schema/audit_logs/entity.json",
+      "relationships": ".ai/schema/audit_logs/relationships.json",
+      "indexes": ".ai/schema/audit_logs/indexes.json",
+      "ddl": ".ai/schema/ddl/audit_logs.sql"
+    },
+    "system_settings": {
+      "entity": ".ai/schema/system_settings/entity.json",
+      "relationships": ".ai/schema/system_settings/relationships.json",
+      "indexes": ".ai/schema/system_settings/indexes.json",
+      "ddl": ".ai/schema/ddl/system_settings.sql"
+    }
+  },
+  "migration_strategy": {
+    "initial_migration": "Create core authentication tables (users, user_sessions, password_resets)",
+    "phase_2_migration": "Add user management tables (user_profiles, user_activities)",
+    "phase_3_migration": "Add RBAC tables (roles, permissions, role_permissions, user_roles)",
+    "phase_4_migration": "Add audit and system tables (audit_logs, system_settings)"
+  },
+  "created_at": "2025-10-15T00:00:00.000Z",
+  "version": "1.0.0"
+}

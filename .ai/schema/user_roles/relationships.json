@@ -1,0 +1,54 @@
+{
+  "table_name": "user_roles",
+  "relationships": {
+    "many_to_one": {
+      "users": {
+        "foreign_key": "user_id",
+        "on_delete": "CASCADE",
+        "on_update": "CASCADE",
+        "description": "User yang memiliki role"
+      },
+      "roles": {
+        "foreign_key": "role_id",
+        "on_delete": "CASCADE",
+        "on_update": "CASCADE",
+        "description": "Role yang dimiliki oleh user"
+      },
+      "assigned_by_user": {
+        "foreign_key": "assigned_by",
+        "on_delete": "SET NULL",
+        "on_update": "CASCADE",
+        "description": "User yang memberikan role assignment"
+      }
+    }
+  },
+  "relationship_constraints": {
+    "user": {
+      "constraint_name": "fk_user_roles_user_id",
+      "references": "users(id)",
+      "on_delete": "CASCADE"
+    },
+    "role": {
+      "constraint_name": "fk_user_roles_role_id",
+      "references": "roles(id)",
+      "on_delete": "CASCADE"
+    },
+    "assigner": {
+      "constraint_name": "fk_user_roles_assigned_by",
+      "references": "users(id)",
+      "on_delete": "SET NULL"
+    }
+  },
+  "junction_table_properties": {
+    "unique_combination": {
+      "columns": ["user_id", "role_id"],
+      "enforcement": true,
+      "description": "Setiap user-role combination harus unik"
+    },
+    "temporal_support": {
+      "enabled": true,
+      "columns": ["assigned_at", "expires_at"],
+      "description": "Support untuk temporary role assignments"
+    }
+  }
+}

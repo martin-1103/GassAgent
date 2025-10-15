@@ -1,0 +1,18 @@
+{
+  "project": {
+    "title": "User Panel - MVP",
+    "type": "web-app",
+    "complexity": "medium",
+    "estimatedDuration": "9600 minutes (4 weeks)"
+  },
+  "phasesCount": 5,
+  "criticalPath": [1, 2, 3, 4, 5],
+  "keyMilestones": [
+    "Project foundation setup",
+    "Authentication system complete",
+    "User management backend ready",
+    "Role system implemented",
+    "Frontend integration complete"
+  ],
+  "created_at": "2025-10-15T00:00:00.000Z"
+}

@@ -1,0 +1,256 @@
+{
+  "table_name": "permissions",
+  "description": "Tabel untuk mendefinisikan permission/izin akses dalam sistem RBAC",
+  "phase": "phase_3",
+  "columns": {
+    "id": {
+      "type": "BIGINT",
+      "unsigned": true,
+      "auto_increment": true,
+      "primary_key": true,
+      "description": "Primary key untuk tabel permissions"
+    },
+    "name": {
+      "type": "VARCHAR(100)",
+      "unique": true,
+      "not_null": true,
+      "description": "Nama permission yang unik (format: resource.action)",
+      "validation": {
+        "min_length": 3,
+        "max_length": 100,
+        "pattern": "^[a-zA-Z0-9_\\.]+$"
+      }
+    },
+    "display_name": {
+      "type": "VARCHAR(150)",
+      "not_null": true,
+      "description": "Nama display permission yang user-friendly",
+      "validation": {
+        "min_length": 3,
+        "max_length": 150
+      }
+    },
+    "description": {
+      "type": "TEXT",
+      "nullable": true,
+      "description": "Deskripsi detail tentang permission"
+    },
+    "resource": {
+      "type": "VARCHAR(50)",
+      "not_null": true,
+      "description": "Resource yang diakses (users, roles, permissions, etc.)",
+      "validation": {
+        "min_length": 2,
+        "max_length": 50
+      }
+    },
+    "action": {
+      "type": "VARCHAR(50)",
+      "not_null": true,
+      "description": "Action yang diizinkan (create, read, update, delete, etc.)",
+      "validation": {
+        "min_length": 2,
+        "max_length": 50
+      }
+    },
+    "module": {
+      "type": "VARCHAR(50)",
+      "nullable": true,
+      "description": "Module atau fitur terkait (authentication, user_management, etc.)",
+      "validation": {
+        "min_length": 2,
+        "max_length": 50
+      }
+    },
+    "is_system": {
+      "type": "BOOLEAN",
+      "default": false,
+      "not_null": true,
+      "description": "Apakah permission ini adalah system permission",
+      "security": {
+        "protected": true,
+        "modification_restriction": "admin_only"
+      }
+    },
+    "is_active": {
+      "type": "BOOLEAN",
+      "default": true,
+      "not_null": true,
+      "description": "Status aktif permission"
+    },
+    "risk_level": {
+      "type": "ENUM('low', 'medium', 'high', 'critical')",
+      "default": "medium",
+      "not_null": true,
+      "description": "Level risiko permission untuk security audit",
+      "security": {
+        "audit_required": "high_critical"
+      }
+    },
+    "created_by": {
+      "type": "BIGINT",
+      "unsigned": true,
+      "nullable": true,
+      "description": "User yang membuat permission",
+      "references": "users(id)"
+    },
+    "created_at": {
+      "type": "TIMESTAMP",
+      "default": "CURRENT_TIMESTAMP",
+      "not_null": true,
+      "description": "Waktu pembuatan permission"
+    },
+    "updated_at": {
+      "type": "TIMESTAMP",
+      "default": "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+      "not_null": true,
+      "description": "Waktu terakhir update permission"
+    }
+  },
+  "constraints": {
+    "unique_constraints": [
+      {
+        "name": "uk_permissions_name",
+        "columns": ["name"]
+      },
+      {
+        "name": "uk_permissions_resource_action",
+        "columns": ["resource", "action"]
+      }
+    ],
+    "check_constraints": [
+      {
+        "name": "ck_permissions_name_format",
+        "condition": "name REGEXP '^[a-zA-Z0-9_\\.]+$'"
+      },
+      {
+        "name": "ck_permissions_risk_level",
+        "condition": "risk_level IN ('low', 'medium', 'high', 'critical')"
+      }
+    ]
+  },
+  "security": {
+    "system_permissions": [
+      {
+        "name": "system.admin",
+        "display_name": "System Administration",
+        "resource": "system",
+        "action": "admin",
+        "module": "system",
+        "risk_level": "critical",
+        "is_system": true,
+        "description": "Full system administration access"
+      },
+      {
+        "name": "users.create",
+        "display_name": "Create Users",
+        "resource": "users",
+        "action": "create",
+        "module": "user_management",
+        "risk_level": "high",
+        "is_system": true,
+        "description": "Permission to create new users"
+      },
+      {
+        "name": "users.read",
+        "display_name": "View Users",
+        "resource": "users",
+        "action": "read",
+        "module": "user_management",
+        "risk_level": "medium",
+        "is_system": true,
+        "description": "Permission to view user information"
+      },
+      {
+        "name": "users.update",
+        "display_name": "Update Users",
+        "resource": "users",
+        "action": "update",
+        "module": "user_management",
+        "risk_level": "high",
+        "is_system": true,
+        "description": "Permission to update user information"
+      },
+      {
+        "name": "users.delete",
+        "display_name": "Delete Users",
+        "resource": "users",
+        "action": "delete",
+        "module": "user_management",
+        "risk_level": "critical",
+        "is_system": true,
+        "description": "Permission to delete users"
+      },
+      {
+        "name": "roles.create",
+        "display_name": "Create Roles",
+        "resource": "roles",
+        "action": "create",
+        "module": "role_management",
+        "risk_level": "high",
+        "is_system": true,
+        "description": "Permission to create new roles"
+      },
+      {
+        "name": "roles.read",
+        "display_name": "View Roles",
+        "resource": "roles",
+        "action": "read",
+        "module": "role_management",
+        "risk_level": "medium",
+        "is_system": true,
+        "description": "Permission to view role information"
+      },
+      {
+        "name": "roles.update",
+        "display_name": "Update Roles",
+        "resource": "roles",
+        "action": "update",
+        "module": "role_management",
+        "risk_level": "high",
+        "is_system": true,
+        "description": "Permission to update role information"
+      },
+      {
+        "name": "roles.delete",
+        "display_name": "Delete Roles",
+        "resource": "roles",
+        "action": "delete",
+        "module": "role_management",
+        "risk_level": "critical",
+        "is_system": true,
+        "description": "Permission to delete roles"
+      }
+    ]
+  },
+  "permission_categories": {
+    "authentication": [
+      "users.login",
+      "users.logout",
+      "users.register",
+      "users.reset_password"
+    ],
+    "user_management": [
+      "users.create",
+      "users.read",
+      "users.update",
+      "users.delete",
+      "users.activate",
+      "users.deactivate"
+    ],
+    "role_management": [
+      "roles.create",
+      "roles.read",
+      "roles.update",
+      "roles.delete",
+      "roles.assign",
+      "roles.revoke"
+    ],
+    "system_admin": [
+      "system.admin",
+      "system.settings",
+      "system.audit",
+      "system.backup"
+    ]
+  }
+}

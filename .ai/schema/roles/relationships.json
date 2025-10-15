@@ -1,0 +1,74 @@
+{
+  "table_name": "roles",
+  "relationships": {
+    "many_to_one": {
+      "users": {
+        "foreign_key": "created_by",
+        "on_delete": "SET NULL",
+        "on_update": "CASCADE",
+        "description": "User yang membuat role ini"
+      }
+    },
+    "one_to_many": {
+      "role_permissions": {
+        "foreign_key": "role_id",
+        "on_delete": "CASCADE",
+        "on_update": "CASCADE",
+        "description": "Permissions yang dimiliki oleh role ini"
+      },
+      "user_roles": {
+        "foreign_key": "role_id",
+        "on_delete": "CASCADE",
+        "on_update": "CASCADE",
+        "description": "Users yang memiliki role ini"
+      }
+    },
+    "many_to_many": {
+      "users": {
+        "through_table": "user_roles",
+        "foreign_key": "role_id",
+        "related_foreign_key": "user_id",
+        "description": "Role dapat dimiliki oleh multiple users"
+      },
+      "permissions": {
+        "through_table": "role_permissions",
+        "foreign_key": "role_id",
+        "related_foreign_key": "permission_id",
+        "description": "Role dapat memiliki multiple permissions"
+      }
+    }
+  },
+  "relationship_constraints": {
+    "users_creator": {
+      "constraint_name": "fk_roles_created_by",
+      "references": "users(id)",
+      "on_delete": "SET NULL"
+    },
+    "role_permissions": {
+      "constraint_name": "fk_role_permissions_role_id",
+      "references": "roles(id)",
+      "on_delete": "CASCADE"
+    },
+    "user_roles": {
+      "constraint_name": "fk_user_roles_role_id",
+      "references": "roles(id)",
+      "on_delete": "CASCADE"
+    }
+  },
+  "cascade_rules": {
+    "role_deletion": {
+      "description": "Ketika role dihapus, semua permission assignments dan user assignments akan terhapus",
+      "impact": "High - perlu konfirmasi sebelum hapus role"
+    },
+    "user_role_removal": {
+      "description": "Ketika user dihapus dari role, permission dari role tersebut tidak akan menghapus user"
+    }
+  },
+  "relationship_integrity": {
+    "prevent_orphaned_records": true,
+    "circular_reference_prevention": {
+      "enabled": true,
+      "description": "Mencegah circular reference melalui role hierarchy"
+    }
+  }
+}

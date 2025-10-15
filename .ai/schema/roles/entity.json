@@ -1,0 +1,171 @@
+{
+  "table_name": "roles",
+  "description": "Tabel untuk mendefinisikan role/posisi dalam sistem RBAC",
+  "phase": "phase_3",
+  "columns": {
+    "id": {
+      "type": "BIGINT",
+      "unsigned": true,
+      "auto_increment": true,
+      "primary_key": true,
+      "description": "Primary key untuk tabel roles"
+    },
+    "name": {
+      "type": "VARCHAR(50)",
+      "unique": true,
+      "not_null": true,
+      "description": "Nama role yang unik",
+      "validation": {
+        "min_length": 2,
+        "max_length": 50,
+        "pattern": "^[a-zA-Z0-9_-]+$"
+      }
+    },
+    "display_name": {
+      "type": "VARCHAR(100)",
+      "not_null": true,
+      "description": "Nama display role yang user-friendly",
+      "validation": {
+        "min_length": 2,
+        "max_length": 100
+      }
+    },
+    "description": {
+      "type": "TEXT",
+      "nullable": true,
+      "description": "Deskripsi detail tentang role dan tanggung jawabnya"
+    },
+    "level": {
+      "type": "INT",
+      "unsigned": true,
+      "not_null": true,
+      "default": 1,
+      "description": "Level hierarki role (semakin tinggi semakin powerful)",
+      "security": {
+        "hierarchy_enforcement": true
+      }
+    },
+    "is_system": {
+      "type": "BOOLEAN",
+      "default": false,
+      "not_null": true,
+      "description": "Apakah role ini adalah system role yang tidak bisa dihapus",
+      "security": {
+        "protected": true,
+        "modification_restriction": "admin_only"
+      }
+    },
+    "is_active": {
+      "type": "BOOLEAN",
+      "default": true,
+      "not_null": true,
+      "description": "Status aktif role untuk digunakan"
+    },
+    "max_users": {
+      "type": "INT",
+      "unsigned": true,
+      "nullable": true,
+      "description": "Maksimal user yang bisa memiliki role ini (null untuk unlimited)"
+    },
+    "created_by": {
+      "type": "BIGINT",
+      "unsigned": true,
+      "nullable": true,
+      "description": "User yang membuat role ini",
+      "references": "users(id)"
+    },
+    "created_at": {
+      "type": "TIMESTAMP",
+      "default": "CURRENT_TIMESTAMP",
+      "not_null": true,
+      "description": "Waktu pembuatan role"
+    },
+    "updated_at": {
+      "type": "TIMESTAMP",
+      "default": "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+      "not_null": true,
+      "description": "Waktu terakhir update role"
+    }
+  },
+  "constraints": {
+    "unique_constraints": [
+      {
+        "name": "uk_roles_name",
+        "columns": ["name"]
+      }
+    ],
+    "check_constraints": [
+      {
+        "name": "ck_roles_level_positive",
+        "condition": "level > 0"
+      },
+      {
+        "name": "ck_roles_system_role_not_deletable",
+        "condition": "NOT (is_system = true AND is_active = false)"
+      }
+    ]
+  },
+  "security": {
+    "system_roles": [
+      {
+        "name": "super_admin",
+        "display_name": "Super Administrator",
+        "level": 100,
+        "is_system": true,
+        "description": "Super administrator dengan akses penuh ke sistem"
+      },
+      {
+        "name": "admin",
+        "display_name": "Administrator",
+        "level": 80,
+        "is_system": true,
+        "description": "Administrator dengan akses ke user dan role management"
+      },
+      {
+        "name": "user",
+        "display_name": "Regular User",
+        "level": 10,
+        "is_system": true,
+        "description": "Regular user dengan akses dasar"
+      }
+    ],
+    "role_hierarchy": {
+      "enforcement": true,
+      "description": "Role dengan level lebih tinggi bisa mengakses resource role level lebih rendah"
+    }
+  },
+  "default_data": [
+    {
+      "name": "super_admin",
+      "display_name": "Super Administrator",
+      "description": "Super administrator dengan akses penuh ke sistem",
+      "level": 100,
+      "is_system": true,
+      "is_active": true
+    },
+    {
+      "name": "admin",
+      "display_name": "Administrator",
+      "description": "Administrator dengan akses ke user dan role management",
+      "level": 80,
+      "is_system": true,
+      "is_active": true
+    },
+    {
+      "name": "moderator",
+      "display_name": "Moderator",
+      "description": "Moderator dengan akses terbatas untuk user management",
+      "level": 50,
+      "is_system": false,
+      "is_active": true
+    },
+    {
+      "name": "user",
+      "display_name": "Regular User",
+      "description": "Regular user dengan akses dasar",
+      "level": 10,
+      "is_system": true,
+      "is_active": true
+    }
+  ]
+}

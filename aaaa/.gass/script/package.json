@@ -1,0 +1,21 @@
+{
+  "name": "headless-claude-scripts",
+  "version": "1.0.0",
+  "description": "Node.js scripts for running Claude Code in headless mode",
+  "main": "headless-claude.js",
+  "scripts": {
+    "start": "node headless-claude.js",
+    "test": "node headless-claude.js --file test.txt 'This is a test file created by headless Claude'",
+    "run-tasks": "node run-tasks.js",
+    "run-tasks-loop": "node run-tasks.js --loop",
+    "run-tasks-loop-fast": "node run-tasks.js --loop --delay=2",
+    "run-tasks-loop-instant": "node run-tasks.js --loop --delay=1",
+    "breakdown": "node plan-breakdown-analyzer.js"
+  },
+  "keywords": ["claude", "headless", "automation", "tasks"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2"
+  }
+}

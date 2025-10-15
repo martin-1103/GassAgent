@@ -1,0 +1,57 @@
+{
+  "project": {
+    "title": "User Panel - MVP",
+    "description": "Simple user management panel for basic CRUD operations on users and roles with authentication and role-based access control",
+    "type": "web-app",
+    "totalPhases": 5,
+    "estimatedDuration": 9600,
+    "complexity": "medium"
+  },
+  "phases": [
+    {
+      "id": 1,
+      "title": "Foundation & Project Setup",
+      "description": "Initial project setup including database design, Express.js server configuration, and Next.js frontend initialization. Establish the technical foundation with proper folder structure and development environment configuration.",
+      "status": "pending",
+      "priority": 1,
+      "duration": 480,
+      "dependencies": []
+    },
+    {
+      "id": 2,
+      "title": "Authentication System Implementation",
+      "description": "Build the core authentication system with JWT tokens, bcrypt password hashing, user registration/login APIs, and authentication middleware. This phase provides the security foundation for all protected features.",
+      "status": "pending",
+      "priority": 1,
+      "duration": 1440,
+      "dependencies": [1]
+    },
+    {
+      "id": 3,
+      "title": "User Management Backend",
+      "description": "Develop the backend APIs for user CRUD operations, profile management, and user status control. Create secure endpoints for user creation, reading, updating, and deactivation with proper validation.",
+      "status": "pending",
+      "priority": 2,
+      "duration": 1440,
+      "dependencies": [2]
+    },
+    {
+      "id": 4,
+      "title": "Role System & Access Control",
+      "description": "Implement the role-based access control system including role management APIs, user-role assignment functionality, and permission checking middleware. Create the foundation for secure access control across the application.",
+      "status": "pending",
+      "priority": 2,
+      "duration": 1440,
+      "dependencies": [3]
+    },
+    {
+      "id": 5,
+      "title": "Frontend Development & Integration",
+      "description": "Build the complete Next.js frontend with Tailwind CSS styling, implement all user interfaces for authentication, user management, and role administration. Integrate frontend with backend APIs and develop the dashboard interface.",
+      "status": "pending",
+      "priority": 3,
+      "duration": 4800,
+      "dependencies": [4]
+    }
+  ]
+}
