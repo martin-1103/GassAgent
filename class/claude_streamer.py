@@ -39,7 +39,7 @@ class ClaudeStreamer:
     def _build_command(self, prompt: str, extra_args: Optional[list] = None) -> list:
         """Build the Claude CLI command."""
         cmd = [
-            self.claude_cmd, "-p", prompt,
+            self.claude_cmd, "-p",
             "--output-format", self.output_format,
             "--permission-mode", self.permission_mode
         ]
@@ -103,6 +103,8 @@ class ClaudeStreamer:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                encoding='utf-8',
+                errors='replace',
                 bufsize=1  # Line buffered
             )
 
@@ -154,13 +156,110 @@ class ClaudeStreamer:
         self.output_format = "json"
 
         try:
-            cmd = self._build_command(prompt, extra_args)
+            cmd, prompt_content = self._build_command(prompt, extra_args)
+
+            # Debug output (safe ASCII)
+            print(f"[DEBUG] Claude command: {' '.join(cmd)}")
+            print(f"[DEBUG] Prompt length: {len(prompt_content)} chars")
+            print(f"[DEBUG] First 100 chars: {prompt_content[:100].encode('ascii', errors='ignore').decode('ascii')}")
+
+            # Use stdin for long prompts
+            process = subprocess.run(
+                cmd,
+                input=prompt_content,  # Send via stdin instead of command line
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace'
+            )
+
+            # Debug output (safe ASCII)
+            print(f"[DEBUG] Return code: {process.returncode}")
+            print(f"[DEBUG] Stdout length: {len(process.stdout)} chars")
+            print(f"[DEBUG] Stderr length: {len(process.stderr)} chars")
+            print(f"[DEBUG] Stderr content: '{process.stderr}'")
+            if process.stdout:
+                print(f"[DEBUG] Stdout preview: {process.stdout[:100].encode('ascii', errors='ignore').decode('ascii')}")
+
+            if process.returncode == 0:
+                try:
+                    data = json.loads(process.stdout)
+                    if isinstance(data, dict):
+                        response_text = data.get('result', '')
+                    elif isinstance(data, list):
+                        # Handle stream-json format (array of messages)
+                        response_text = ""
+                        for item in data:
+                            if isinstance(item, dict) and item.get('type') == 'result':
+                                response_text = item.get('result', '')
+                                break
+                        else:
+                            # If no result found, try to extract text from assistant messages
+                            for item in data:
+                                if isinstance(item, dict) and item.get('type') == 'assistant':
+                                    message = item.get('message', {})
+                                    content_parts = message.get('content', [])
+                                    for part in content_parts:
+                                        if part.get('type') == 'text':
+                                            response_text = part.get('text', '')
+                                            if response_text:
+                                                break
+                                    if response_text:
+                                        break
+                    else:
+                        response_text = process.stdout
+                except json.JSONDecodeError:
+                    response_text = process.stdout
+            else:
+                response_text = ""
+
+            return response_text, process.returncode
+
+        finally:
+            # Restore original format
+            self.output_format = temp_format
+
+    def get_response_from_file(self, file_path: str, extra_args: Optional[list] = None) -> tuple:
+        """
+        Get Claude response from file using @file syntax
+
+        Args:
+            file_path: Path to file containing prompt
+            extra_args: Additional CLI arguments
+
+        Returns:
+            tuple: (response_text, exit_code)
+        """
+        # Override output format for capturing
+        temp_format = self.output_format
+        self.output_format = "json"
+
+        try:
+            cmd = self._build_command("", extra_args)
+
+            # Use @file syntax instead of reading file content
+            file_prompt = f"@{file_path}"
+            cmd[1] = file_prompt  # Replace "-p" with "@filename"
+
+            # Debug output (safe ASCII)
+            print(f"[DEBUG] Claude command: {' '.join(cmd)}")
+            print(f"[DEBUG] File path: {file_path}")
 
             process = subprocess.run(
                 cmd,
                 capture_output=True,
-                text=True
+                text=True,
+                encoding='utf-8',
+                errors='replace'
             )
+
+            # Debug output (safe ASCII)
+            print(f"[DEBUG] Return code: {process.returncode}")
+            print(f"[DEBUG] Stdout length: {len(process.stdout)} chars")
+            print(f"[DEBUG] Stderr length: {len(process.stderr)} chars")
+            print(f"[DEBUG] Stderr content: '{process.stderr}'")
+            if process.stdout:
+                print(f"[DEBUG] Stdout preview: {process.stdout[:100].encode('ascii', errors='ignore').decode('ascii')}")
 
             if process.returncode == 0:
                 try:

@@ -3,6 +3,11 @@
 Test ClaudeStreamer Class
 """
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'class'))
+
 from claude_streamer import ClaudeStreamer
 
 def test_class():
