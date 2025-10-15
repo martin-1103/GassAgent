@@ -56,8 +56,8 @@ class BreakdownLoop:
         )
 
         # Ensure directories exist
-        self.prompt_tmp_dir.mkdir(exist_ok=True)
-        self.prompt_template_dir.mkdir(exist_ok=True)
+        for dir_path in [self.prompt_tmp_dir, self.prompt_template_dir]:
+            dir_path.mkdir(exist_ok=True)
         self.plan_dir.mkdir(parents=True, exist_ok=True)
 
         # Statistics tracking
@@ -116,7 +116,7 @@ Please proceed with the breakdown now.
                 f.write(prompt)
             return str(prompt_file)
         except Exception as e:
-            print(f"Error creating prompt file: {e}")
+            print(f"✗ Error creating prompt file: {e}")
             return ""
 
     def _get_agent_template(self) -> str:
@@ -148,9 +148,7 @@ Please proceed with the breakdown now.
         Returns:
             Result dictionary with success status and details
         """
-        print(f"\n[PROCESS] Phase {phase_info['phase_id']}: {phase_info['title']}")
-        print(f"   Duration: {phase_info['duration']} minutes")
-        print(f"   File: {phase_info['file']}")
+        print(f"Phase {phase_info['phase_id']}: {phase_info['title']} ({phase_info['duration']} min)")
 
         # Create prompt file
         prompt_file = self._create_prompt_file(phase_info)
@@ -161,42 +159,27 @@ Please proceed with the breakdown now.
                 "phase_id": phase_info['phase_id']
             }
 
-        print(f"   Created prompt: {prompt_file}")
-
-        # Call Claude via ClaudeStreamer - gunakan @file syntax
-        print(f"   Sending to Claude...")
-
-        # Initialize response variables
-        response_text = ""
-        exit_code = -1
-        success = False
-        error_msg = ""
-
         try:
             # Kirim prompt file langsung dengan @file syntax
             response_text, exit_code = self.claude_streamer.get_response_from_file(prompt_file)
-            print(f"   [DEBUG] Response length: {len(response_text)} chars")
-            print(f"   [DEBUG] Exit code: {exit_code}")
 
             if exit_code == 0:
-                print(f"   [OK] Claude response received")
+                print(f"   ✓ Success")
                 success = True
             else:
-                print(f"   [ERROR] Claude error (exit code: {exit_code})")
-                print(f"   [DEBUG] Response: {response_text[:500]}")
+                print(f"   ✗ Claude error (exit code: {exit_code})")
                 error_msg = f"Claude returned exit code {exit_code}"
 
         except Exception as e:
-            print(f"   [ERROR] Exception calling Claude: {e}")
+            print(f"   ✗ Exception: {e}")
             error_msg = f"Exception: {e}"
 
         finally:
-            # Always clean up prompt file regardless of success/failure
+            # Clean up prompt file
             try:
                 os.remove(prompt_file)
-                print(f"   [CLEANUP] Removed prompt file: {prompt_file}")
-            except Exception as cleanup_error:
-                print(f"   [WARNING] Failed to remove prompt file: {cleanup_error}")
+            except Exception:
+                pass
 
         # Return result
         if success:
@@ -222,35 +205,9 @@ Please proceed with the breakdown now.
         else:
             self.failed_breakdowns += 1
 
-    def _print_statistics(self):
-        """Print current statistics."""
-        print(f"\n[STATISTICS]:")
-        print(f"   Total processed: {self.total_processed}")
-        print(f"   Successful: {self.successful_breakdowns}")
-        print(f"   Failed: {self.failed_breakdowns}")
-        if self.start_time:
-            elapsed = datetime.now() - self.start_time
-            print(f"   Elapsed time: {elapsed}")
-
     def _process_phase_worker(self, phase_info: Dict[str, Any], worker_id: int) -> Dict[str, Any]:
-        """
-        Worker function to process a single phase.
-
-        Args:
-            phase_info: Information about the phase to breakdown
-            worker_id: ID of the worker processing this phase
-
-        Returns:
-            Result dictionary with success status and details
-        """
-        print(f"[WORKER-{worker_id}] Starting Phase {phase_info['phase_id']}: {phase_info['title']}")
-
-        # Add small random delay to prevent all workers hitting Claude at once
-        if self.max_workers > 1:
-            initial_delay = random.uniform(0.1, 0.5) * worker_id
-            if initial_delay > 0:
-                print(f"[WORKER-{worker_id}] Delaying {initial_delay:.1f}s to prevent rate limiting...")
-                time.sleep(initial_delay)
+        """Worker function to process a single phase."""
+        print(f"Worker-{worker_id}: {phase_info['phase_id']}")
 
         # Call breakdown agent
         result = self._call_breakdown_agent(phase_info)
@@ -260,9 +217,9 @@ Please proceed with the breakdown now.
 
         # Show result
         if result["success"]:
-            print(f"[WORKER-{worker_id}] [OK] Completed Phase {phase_info['phase_id']}")
+            print(f"   ✓ Completed")
         else:
-            print(f"[WORKER-{worker_id}] [ERROR] Failed Phase {phase_info['phase_id']}: {result.get('error', 'Unknown error')}")
+            print(f"   ✗ Failed: {result.get('error', 'Unknown error')}")
 
         return result
 
@@ -279,30 +236,23 @@ Please proceed with the breakdown now.
             self.successful_breakdowns = 0
             self.failed_breakdowns = 0
 
-        print(f"\n[START] Starting Breakdown Loop")
-        print(f"   Plan directory: {self.plan_dir}")
-        print(f"   Prompt temp directory: {self.prompt_tmp_dir}")
-        print(f"   Max workers: {self.max_workers}")
-        print(f"   Max iterations: {max_iterations}")
+        print(f"Starting Breakdown Loop - Workers: {self.max_workers}, Iterations: {max_iterations}")
 
         iteration = 0
         while iteration < max_iterations:
             iteration += 1
-            print(f"\n{'='*60}")
-            print(f"[LOOP] Iteration {iteration}")
-            print(f"{'='*60}")
+            print(f"\n--- Iteration {iteration} ---")
 
             # Find phases needing breakdown
             phases_needing_breakdown = self.phase_manager.find_phases_needing_breakdown(limit=50)
 
             if not phases_needing_breakdown:
-                print("[SUCCESS] No phases with duration >60 minutes need breakdown!")
-                print("[SUCCESS] All leaf phases are within the required duration limit.")
-                self._print_statistics()
-                print("\n[DONE] Breakdown loop completed successfully!")
+                print("✓ No phases need breakdown - all within 60min limit")
+                print(f"Stats: {self.successful_breakdowns} success, {self.failed_breakdowns} failed")
+                print("\n✓ Breakdown loop completed!")
                 break
 
-            print(f"[FOUND] {len(phases_needing_breakdown)} phases needing breakdown:")
+            print(f"Found {len(phases_needing_breakdown)} phases needing breakdown:")
 
             # Group by file for display
             grouped_by_file = {}
@@ -314,14 +264,11 @@ Please proceed with the breakdown now.
 
             # Display found phases
             for file_name, phases in grouped_by_file.items():
-                print(f"\n[FILE] File: {file_name}")
+                print(f"\nFile: {file_name}")
                 for phase in phases:
-                    print(f"   - Phase {phase['phase_id']}: {phase['title']}")
-                    print(f"     Duration: {phase['duration']} minutes | Status: {phase['status']}")
-                    self.phase_manager.log_duration_check(phase['phase_id'], phase['duration'])
+                    print(f"   - {phase['phase_id']}: {phase['title']} ({phase['duration']}min)")
 
-            # Process phases in parallel
-            print(f"\n[PARALLEL] Processing {len(phases_needing_breakdown)} phases with {self.max_workers} workers...")
+            print(f"\nProcessing {len(phases_needing_breakdown)} phases with {self.max_workers} workers...")
 
             # Determine number of phases to process in this batch
             # Process up to max_workers phases per iteration
@@ -341,17 +288,17 @@ Please proceed with the breakdown now.
                         result = future.result()
                         # Results are already handled in _process_phase_worker
                     except Exception as e:
-                        print(f"[ERROR] Worker exception for phase {phase['phase_id']}: {e}")
+                        print(f"   ✗ Worker exception: {e}")
                         self._update_statistics(False)
 
-            print(f"\n[BATCH] Completed batch. Processed {len(phases_to_process)} phases.")
-            self._print_statistics()
+            print(f"Batch completed: {len(phases_to_process)} phases processed")
+            print(f"Stats: {self.successful_breakdowns} success, {self.failed_breakdowns} failed")
 
         else:
-            print(f"\n[STOP] Maximum iterations ({max_iterations}) reached. Stopping loop.")
-            self._print_statistics()
+            print(f"\n✓ Maximum iterations ({max_iterations}) reached")
+            print(f"Final stats: {self.successful_breakdowns} success, {self.failed_breakdowns} failed")
 
-        print(f"\n[DONE] Breakdown loop finished!")
+        print("\n✓ Breakdown loop finished!")
 
 
 def main():
@@ -371,11 +318,11 @@ def main():
     try:
         breakdown_loop.run_loop(max_iterations=args.max_iterations)
     except KeyboardInterrupt:
-        print(f"\n\n[INTERRUPTED] Breakdown interrupted by user")
-        breakdown_loop._print_statistics()
+        print(f"\n\n✓ Interrupted by user")
+        print(f"Stats: {breakdown_loop.successful_breakdowns} success, {breakdown_loop.failed_breakdowns} failed")
     except Exception as e:
-        print(f"\n\n[FATAL ERROR] Unexpected error: {e}")
-        breakdown_loop._print_statistics()
+        print(f"\n\n✗ Fatal error: {e}")
+        print(f"Stats: {breakdown_loop.successful_breakdowns} success, {breakdown_loop.failed_breakdowns} failed")
 
 
 if __name__ == "__main__":
