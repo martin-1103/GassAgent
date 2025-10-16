@@ -244,21 +244,21 @@ Always maintain traceability to the original phase, ensure the breakdown respect
 ## TASK: Breakdown this phase
 
 **Phase Information:**
-- Phase ID: 2
-- Title: Multi-Protocol API Engine
-- Duration: 1200 minutes
+- Phase ID: 1.5
+- Title: Frontend Foundation & React Setup
+- Duration: 160 minutes
 - Status: pending
-- Source File: phases.json
+- Source File: 1.json
 
 **Instructions:**
 1. This phase duration is >60 minutes and needs breakdown
 2. Create sub-phases with duration <60 minutes each
-3. Generate single file: 2.json
+3. Generate single file: 1.5.json
 4. Use dependency-based breakdown approach
 5. Include all sub-phases in the single file
 6. Set breakdown_complete: true when done
 
 **Output Location:**
-Save the result to: .ai\plan/2.json
+Save the result to: .ai\plan/1.5.json
 
 Please proceed with the breakdown now.
