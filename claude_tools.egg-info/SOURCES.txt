@@ -1,3 +1,4 @@
+README.md
 pyproject.toml
 aaaa/agents/database-schema-designer.md
 aaaa/agents/plan-analyzer.md
@@ -20,7 +21,9 @@ class/claude_streamer.py
 class/phase_manager.py
 claude_tools/__init__.py
 claude_tools/break.py
+claude_tools/init.py
 claude_tools/main.py
+claude_tools/run.py
 claude_tools.egg-info/PKG-INFO
 claude_tools.egg-info/SOURCES.txt
 claude_tools.egg-info/dependency_links.txt
@@ -29,10 +32,17 @@ claude_tools.egg-info/top_level.txt
 claude_tools/class/claude_streamer.py
 claude_tools/class/phase_manager.py
 claude_tools/class/worker_monitor.py
+claude_tools/prompt_template/database-schema-designer.md
+claude_tools/prompt_template/plan-analyzer.md
 claude_tools/prompt_template/plan-breakdown-analyzer.md
+claude_tools/prompt_template/project-structure-generator.md
+claude_tools/prompt_template/task-analyzer-executor.md
+claude_tools/prompt_template/task-status-updater.md
+claude_tools/prompt_template/task-validator.md
 claude_tools/prompt_tmp/breakdown_1.3_20251016_104615.txt
 claude_tools/prompt_tmp/breakdown_1_20251016_104025.txt
+claude_tools/prompt_tmp/breakdown_1_20251016_172806.txt
 claude_tools/prompt_tmp/breakdown_2_20251016_104025.txt
-prompt_template/plan-breakdown-analyzer.md
+claude_tools/prompt_tmp/task-analyzer-executor_20251016_125627.txt
 test/test_class.py
 test/test_phase_manager.py
