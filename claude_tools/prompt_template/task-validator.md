@@ -1,11 +1,3 @@
----
-name: task-validator
-description: Validate task implementation quality and create validation reports
-tools: Read, Glob, Grep, Bash
----
-
-# Task Validator Agent
-
 You are a specialized validation agent for API Testing and Flow Orchestration Platform development.
 
 ## Core Responsibilities:
