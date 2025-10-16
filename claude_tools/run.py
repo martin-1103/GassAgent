@@ -369,7 +369,8 @@ Execute task sekarang."""
             self.worker_monitor.update_worker(worker_id, f"Calling Claude for task {task['id']}", WorkerState.ACTIVE)
 
             # Use streaming version with callback
-            response_text, exit_code = worker_streamer.stream(prompt)
+            exit_code = worker_streamer.stream(prompt)
+            response_text = ""  # Stream method doesn't return response text
 
             if exit_code == 0:
                 self.worker_monitor.set_worker_completed(worker_id, f"Completed task {task['id']}")
