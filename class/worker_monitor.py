@@ -56,6 +56,7 @@ class WorkerMonitor:
         self._display_active = False
         self._display_thread = None
         self._stop_display = threading.Event()
+        self._first_display = True
 
     def update_worker(self, worker_id: int, status: str, state: WorkerState = WorkerState.ACTIVE):
         """
@@ -121,13 +122,22 @@ class WorkerMonitor:
                 self._display_workers()
 
     def _display_workers(self):
-        """Display current worker status - simple multi-line approach"""
+        """Display current worker status with real-time line updates"""
         if not self._display_active:
             return
 
-        # Simple approach: just print workers on new lines
-        # Each update will create new lines instead of overwriting
-        # This ensures compatibility across all terminals
+        # Move cursor up to overwrite previous worker lines
+        # Calculate how many lines to move up (workers + separator)
+        lines_up = self.max_workers + 1  # workers + separator line
+
+        # Use ANSI escape codes to move cursor up and clear lines
+        if hasattr(self, '_first_display') and self._first_display:
+            # First display, don't try to move up
+            self._first_display = False
+        else:
+            # Move cursor up to overwrite previous lines
+            sys.stdout.write(f'\033[{lines_up}A')  # Move cursor up
+            sys.stdout.flush()
 
         # Display each worker on separate line with timestamp
         for worker_id in range(1, self.max_workers + 1):
@@ -155,10 +165,14 @@ class WorkerMonitor:
             current_time = time.strftime("%H:%M:%S")
             worker_line = f"W{worker_id}:{clean_status} {state_display} | {current_time}"
 
-            print(worker_line)
+            # Clear line and write new content
+            sys.stdout.write('\r\033[K')  # Move to start and clear line
+            sys.stdout.write(worker_line + '\n')
+            sys.stdout.flush()
 
         # Print separator to distinguish updates
-        print("-" * 60)
+        sys.stdout.write('-' * 60 + '\n')
+        sys.stdout.flush()
 
     def get_worker_count_by_state(self, state: WorkerState) -> int:
         """Get number of workers in specific state"""
