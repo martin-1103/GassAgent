@@ -102,9 +102,24 @@ class PhaseManager:
     def is_leaf_phase(self, file_path: str, all_files: List[str]) -> bool:
         """Check if phase is leaf (no child files)"""
         file_name = os.path.basename(file_path).replace('.json', '')
-        child_pattern = re.compile(f'^{file_name.replace(".", "\\.")}\\.\\d+\\.json$')
 
-        return not any(child_pattern.search(os.path.basename(f)) for f in all_files)
+        # Check for child files based on file name pattern
+        for f in all_files:
+            other_file_name = os.path.basename(f).replace('.json', '')
+
+            if file_name == "phases":
+                # Child of phases.json are numeric files: 1.json, 2.json, etc.
+                if other_file_name.isdigit() and int(other_file_name) > 0:
+                    return False  # Found child file
+            else:
+                # Child of X.json are X.Y.json files
+                if other_file_name.startswith(f"{file_name}."):
+                    # Check if it's a direct child (X.Y) not grandchild (X.Y.Z)
+                    parts = other_file_name.split(".")
+                    if len(parts) == len(file_name.split(".")) + 1:
+                        return False  # Found child file
+
+        return True  # No child files found
 
     # ==================== STATUS METHODS ====================
 
