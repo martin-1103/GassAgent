@@ -1,0 +1,124 @@
+{
+  "table_name": "user_roles",
+  "indexes": {
+    "primary": {
+      "name": "PRIMARY",
+      "type": "PRIMARY",
+      "columns": ["id"],
+      "description": "Primary key index"
+    },
+    "unique_indexes": [
+      {
+        "name": "uk_user_roles_user_role",
+        "type": "UNIQUE",
+        "columns": ["user_id", "role_id"],
+        "description": "Index untuk memastikan user-role combination unik"
+      }
+    ],
+    "single_column_indexes": [
+      {
+        "name": "idx_user_roles_user_id",
+        "type": "INDEX",
+        "columns": ["user_id"],
+        "description": "Index untuk query roles by user"
+      },
+      {
+        "name": "idx_user_roles_role_id",
+        "type": "INDEX",
+        "columns": ["role_id"],
+        "description": "Index untuk query users by role"
+      },
+      {
+        "name": "idx_user_roles_assigned_by",
+        "type": "INDEX",
+        "columns": ["assigned_by"],
+        "description": "Index untuk query assignments by assigner"
+      },
+      {
+        "name": "idx_user_roles_is_active",
+        "type": "INDEX",
+        "columns": ["is_active"],
+        "description": "Index untuk filter active assignments"
+      },
+      {
+        "name": "idx_user_roles_expires_at",
+        "type": "INDEX",
+        "columns": ["expires_at"],
+        "description": "Index untuk query expired assignments"
+      }
+    ],
+    "composite_indexes": [
+      {
+        "name": "idx_user_roles_user_active",
+        "type": "INDEX",
+        "columns": ["user_id", "is_active"],
+        "description": "Index untuk query active roles by user"
+      },
+      {
+        "name": "idx_user_roles_role_active",
+        "type": "INDEX",
+        "columns": ["role_id", "is_active"],
+        "description": "Index untuk query active users by role"
+      },
+      {
+        "name": "idx_user_roles_expiry_active",
+        "type": "INDEX",
+        "columns": ["expires_at", "is_active"],
+        "description": "Index untuk query即将到期的assignments"
+      },
+      {
+        "name": "idx_user_roles_user_active_assigned",
+        "type": "INDEX",
+        "columns": ["user_id", "is_active", "assigned_at"],
+        "description": "Index untuk query user roles dengan sorting by assignment date"
+      }
+    ],
+    "performance_indexes": [
+      {
+        "name": "idx_user_roles_permission_check",
+        "type": "INDEX",
+        "columns": ["user_id", "is_active", "expires_at"],
+        "description": "Optimized index untuk permission checking"
+      }
+    ]
+  },
+  "index_analysis": {
+    "query_patterns": [
+      {
+        "query": "SELECT r.* FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ? AND ur.is_active = true",
+        "used_indexes": ["idx_user_roles_user_active"],
+        "optimization": "Efisien untuk mendapatkan user roles"
+      },
+      {
+        "query": "SELECT u.* FROM users u JOIN user_roles ur ON u.id = ur.user_id WHERE ur.role_id = ? AND ur.is_active = true",
+        "used_indexes": ["idx_user_roles_role_active"],
+        "optimization": "Efisien untuk mendapatkan users by role"
+      },
+      {
+        "query": "SELECT * FROM user_roles WHERE expires_at < NOW() AND is_active = true",
+        "used_indexes": ["idx_user_roles_expiry_active"],
+        "optimization": "Efisien untuk expired role cleanup"
+      }
+    ]
+  },
+  "maintenance": {
+    "rebuild_frequency": "monthly",
+    "monitoring": {
+      "unused_indexes": [
+        "idx_user_roles_assigned_by"
+      ],
+      "high_usage_indexes": [
+        "uk_user_roles_user_role",
+        "idx_user_roles_user_active",
+        "idx_user_roles_role_active"
+      ]
+    },
+    "cleanup_jobs": [
+      {
+        "name": "cleanup_expired_roles",
+        "frequency": "daily",
+        "query": "UPDATE user_roles SET is_active = false WHERE expires_at < NOW() AND is_active = true"
+      }
+    ]
+  }
+}

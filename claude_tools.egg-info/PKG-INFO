@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: claude-tools
+Version: 0.1.0
+Summary: Claude CLI tools for streaming and breakdown automation
+Author-email: User <user@example.com>
+License: MIT
+Project-URL: Homepage, https://github.com/user/claude-tools
+Project-URL: Repository, https://github.com/user/claude-tools.git
+Project-URL: Issues, https://github.com/user/claude-tools/issues
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown

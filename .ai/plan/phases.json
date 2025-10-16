@@ -12,7 +12,7 @@
       "id": 1,
       "title": "Foundation & Project Setup",
       "description": "Initial project setup including database design, Express.js server configuration, and Next.js frontend initialization. Establish the technical foundation with proper folder structure and development environment configuration.",
-      "status": "completed",
+      "status": "pending",
       "priority": 1,
       "duration": 480,
       "dependencies": []
@@ -24,9 +24,7 @@
       "status": "pending",
       "priority": 1,
       "duration": 1440,
-      "dependencies": [
-        1
-      ]
+      "dependencies": [1]
     },
     {
       "id": 3,
@@ -35,9 +33,7 @@
       "status": "pending",
       "priority": 2,
       "duration": 1440,
-      "dependencies": [
-        2
-      ]
+      "dependencies": [2]
     },
     {
       "id": 4,
@@ -46,9 +42,7 @@
       "status": "pending",
       "priority": 2,
       "duration": 1440,
-      "dependencies": [
-        3
-      ]
+      "dependencies": [3]
     },
     {
       "id": 5,
@@ -57,9 +51,7 @@
       "status": "pending",
       "priority": 3,
       "duration": 4800,
-      "dependencies": [
-        4
-      ]
+      "dependencies": [4]
     }
   ]
 }

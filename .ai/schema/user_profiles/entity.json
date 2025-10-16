@@ -1,0 +1,176 @@
+{
+  "table_name": "user_profiles",
+  "description": "Tabel untuk menyimpan profil detail user",
+  "phase": "phase_2",
+  "columns": {
+    "id": {
+      "type": "BIGINT",
+      "unsigned": true,
+      "auto_increment": true,
+      "primary_key": true,
+      "description": "Primary key untuk tabel user_profiles"
+    },
+    "user_id": {
+      "type": "BIGINT",
+      "unsigned": true,
+      "unique": true,
+      "not_null": true,
+      "description": "Foreign key ke tabel users",
+      "references": "users(id)"
+    },
+    "first_name": {
+      "type": "VARCHAR(50)",
+      "nullable": true,
+      "description": "Nama depan user"
+    },
+    "last_name": {
+      "type": "VARCHAR(50)",
+      "nullable": true,
+      "description": "Nama belakang user"
+    },
+    "full_name": {
+      "type": "VARCHAR(100)",
+      "nullable": true,
+      "description": "Nama lengkap user (computed atau manual)",
+      "generated": "always as (concat(first_name, ' ', last_name)) virtual"
+    },
+    "phone": {
+      "type": "VARCHAR(20)",
+      "nullable": true,
+      "description": "Nomor telepon user",
+      "validation": {
+        "pattern": "^[+]?[0-9]{10,15}$"
+      }
+    },
+    "avatar_url": {
+      "type": "VARCHAR(255)",
+      "nullable": true,
+      "description": "URL avatar user"
+    },
+    "bio": {
+      "type": "TEXT",
+      "nullable": true,
+      "description": "Biografi singkat user"
+    },
+    "date_of_birth": {
+      "type": "DATE",
+      "nullable": true,
+      "description": "Tanggal lahir user"
+    },
+    "gender": {
+      "type": "ENUM('male', 'female', 'other', 'prefer_not_to_say')",
+      "nullable": true,
+      "description": "Jenis kelamin user"
+    },
+    "address": {
+      "type": "VARCHAR(255)",
+      "nullable": true,
+      "description": "Alamat lengkap user"
+    },
+    "city": {
+      "type": "VARCHAR(100)",
+      "nullable": true,
+      "description": "Kota user"
+    },
+    "country": {
+      "type": "VARCHAR(100)",
+      "nullable": true,
+      "description": "Negara user"
+    },
+    "postal_code": {
+      "type": "VARCHAR(20)",
+      "nullable": true,
+      "description": "Kode pos user"
+    },
+    "timezone": {
+      "type": "VARCHAR(50)",
+      "default": "UTC",
+      "not_null": true,
+      "description": "Timezone user untuk display waktu"
+    },
+    "language": {
+      "type": "VARCHAR(10)",
+      "default": "en",
+      "not_null": true,
+      "description": "Bahasa preferensi user"
+    },
+    "notification_email": {
+      "type": "BOOLEAN",
+      "default": true,
+      "not_null": true,
+      "description": "Apakah user menerima email notifications"
+    },
+    "notification_push": {
+      "type": "BOOLEAN",
+      "default": true,
+      "not_null": true,
+      "description": "Apakah user menerima push notifications"
+    },
+    "two_factor_enabled": {
+      "type": "BOOLEAN",
+      "default": false,
+      "not_null": true,
+      "description": "Apakah 2FA diaktifkan"
+    },
+    "created_at": {
+      "type": "TIMESTAMP",
+      "default": "CURRENT_TIMESTAMP",
+      "not_null": true,
+      "description": "Waktu pembuatan profil"
+    },
+    "updated_at": {
+      "type": "TIMESTAMP",
+      "default": "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+      "not_null": true,
+      "description": "Waktu terakhir update profil"
+    }
+  },
+  "constraints": {
+    "unique_constraints": [
+      {
+        "name": "uk_user_profiles_user_id",
+        "columns": ["user_id"]
+      }
+    ],
+    "foreign_key_constraints": [
+      {
+        "name": "fk_user_profiles_user_id",
+        "column": "user_id",
+        "references": "users(id)",
+        "on_delete": "CASCADE",
+        "on_update": "CASCADE"
+      }
+    ],
+    "check_constraints": [
+      {
+        "name": "ck_user_profiles_date_of_birth_reasonable",
+        "condition": "date_of_birth IS NULL OR date_of_birth BETWEEN '1900-01-01' AND CURRENT_DATE"
+      }
+    ]
+  },
+  "privacy": {
+    "sensitive_fields": [
+      "date_of_birth",
+      "phone",
+      "address"
+    ],
+    "public_fields": [
+      "first_name",
+      "last_name",
+      "full_name",
+      "avatar_url",
+      "bio"
+    ]
+  },
+  "validation_rules": {
+    "phone": {
+      "international_format": true,
+      "min_length": 10,
+      "max_length": 15
+    },
+    "avatar_url": {
+      "allowed_formats": ["jpg", "jpeg", "png", "gif", "webp"],
+      "max_size_mb": 5
+    }
+  }
+}

@@ -1,0 +1,2 @@
+[console_scripts]
+gass = claude_tools.main:gass_cli

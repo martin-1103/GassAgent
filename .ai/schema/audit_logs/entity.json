@@ -1,0 +1,114 @@
+{
+  "table_name": "audit_logs",
+  "description": "Tabel untuk logging audit system-wide untuk security compliance",
+  "phase": "phase_4",
+  "columns": {
+    "id": {
+      "type": "BIGINT",
+      "unsigned": true,
+      "auto_increment": true,
+      "primary_key": true,
+      "description": "Primary key untuk tabel audit_logs"
+    },
+    "user_id": {
+      "type": "BIGINT",
+      "unsigned": true,
+      "nullable": true,
+      "description": "Foreign key ke tabel users (NULL untuk system actions)",
+      "references": "users(id)"
+    },
+    "action": {
+      "type": "VARCHAR(100)",
+      "not_null": true,
+      "description": "Action yang dilakukan (CREATE, UPDATE, DELETE, LOGIN, etc.)"
+    },
+    "resource_type": {
+      "type": "VARCHAR(50)",
+      "not_null": true,
+      "description": "Tipe resource yang diakses (users, roles, permissions, etc.)"
+    },
+    "resource_id": {
+      "type": "BIGINT",
+      "unsigned": true,
+      "nullable": true,
+      "description": "ID dari resource yang diakses"
+    },
+    "old_values": {
+      "type": "JSON",
+      "nullable": true,
+      "description": "Nilai lama sebelum perubahan (untuk UPDATE)"
+    },
+    "new_values": {
+      "type": "JSON",
+      "nullable": true,
+      "description": "Nilai baru setelah perubahan"
+    },
+    "ip_address": {
+      "type": "VARCHAR(45)",
+      "nullable": true,
+      "description": "IP address dari mana action dilakukan"
+    },
+    "user_agent": {
+      "type": "TEXT",
+      "nullable": true,
+      "description": "User agent string"
+    },
+    "session_id": {
+      "type": "VARCHAR(255)",
+      "nullable": true,
+      "description": "Session ID terkait"
+    },
+    "success": {
+      "type": "BOOLEAN",
+      "default": true,
+      "not_null": true,
+      "description": "Apakah action berhasil atau gagal"
+    },
+    "error_message": {
+      "type": "TEXT",
+      "nullable": true,
+      "description": "Error message jika action gagal"
+    },
+    "created_at": {
+      "type": "TIMESTAMP",
+      "default": "CURRENT_TIMESTAMP",
+      "not_null": true,
+      "description": "Waktu audit log dibuat"
+    }
+  },
+  "constraints": {
+    "foreign_key_constraints": [
+      {
+        "name": "fk_audit_logs_user_id",
+        "column": "user_id",
+        "references": "users(id)",
+        "on_delete": "SET NULL",
+        "on_update": "CASCADE"
+      }
+    ]
+  },
+  "security": {
+    "audit_compliance": {
+      "immutable_logs": true,
+      "retention_policy": "90 days minimum",
+      "backup_required": true,
+      "encryption_at_rest": true
+    },
+    "critical_actions": [
+      "users.create",
+      "users.delete",
+      "roles.create",
+      "roles.delete",
+      "permissions.create",
+      "permissions.delete",
+      "system.settings.update"
+    ]
+  },
+  "logging_rules": {
+    "auto_log_crud": true,
+    "log_authentication": true,
+    "log_permission_changes": true,
+    "log_sensitive_data_access": true,
+    "log_admin_actions": true
+  }
+}
