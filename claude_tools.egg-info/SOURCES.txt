@@ -17,8 +17,6 @@ aaaa/commands/breakdown-loop.md
 aaaa/commands/coreplan.md
 aaaa/commands/init.md
 aaaa/commands/run-tasks.md
-class/claude_streamer.py
-class/phase_manager.py
 claude_tools/__init__.py
 claude_tools/break.py
 claude_tools/init.py
@@ -40,16 +38,11 @@ claude_tools/prompt_template/task-analyzer-executor.md
 claude_tools/prompt_template/task-status-updater.md
 claude_tools/prompt_template/task-validator.md
 claude_tools/prompt_tmp/breakdown_1.3_20251016_104615.txt
-claude_tools/prompt_tmp/breakdown_1.3_20251016_181646.txt
 claude_tools/prompt_tmp/breakdown_1_20251016_104025.txt
 claude_tools/prompt_tmp/breakdown_1_20251016_172806.txt
-claude_tools/prompt_tmp/breakdown_1_20251016_175257.txt
-claude_tools/prompt_tmp/breakdown_1_20251016_181241.txt
 claude_tools/prompt_tmp/breakdown_2_20251016_104025.txt
-claude_tools/prompt_tmp/breakdown_2_20251016_181320.txt
-claude_tools/prompt_tmp/breakdown_3_20251016_181320.txt
-claude_tools/prompt_tmp/breakdown_4_20251016_181320.txt
-claude_tools/prompt_tmp/breakdown_5_20251016_181320.txt
+claude_tools/prompt_tmp/breakdown_7_20251016_184020.txt
+claude_tools/prompt_tmp/plan-analyzer_20251016_183134.txt
 claude_tools/prompt_tmp/task-analyzer-executor_20251016_125627.txt
 test/test_class.py
 test/test_phase_manager.py

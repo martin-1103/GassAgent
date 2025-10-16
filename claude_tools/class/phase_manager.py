@@ -9,7 +9,9 @@ Supports both individual files and phases.json formats.
 import json
 import os
 import re
+import shutil
 from typing import List, Dict, Any, Optional
+from claude_streamer import ClaudeStreamer
 
 
 class PhaseManager:
@@ -26,11 +28,35 @@ class PhaseManager:
 
     # ==================== HELPER METHODS ====================
 
-    def load_json(self, file_path: str) -> Dict[str, Any]:
-        """Load JSON file safely"""
+    def load_json(self, file_path: str, auto_repair: bool = True) -> Dict[str, Any]:
+        """Load JSON file safely with optional auto-repair
+
+        Args:
+            file_path: Path to JSON file
+            auto_repair: Enable auto-repair using Claude AI if JSON decode fails
+
+        Returns:
+            Parsed JSON data as dict, or empty dict if failed
+        """
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
+        except json.JSONDecodeError as e:
+            if auto_repair:
+                print(f"[JSON ERROR] {file_path}: {e}")
+                repaired_json = self.repair_json_file(file_path, str(e))
+                if repaired_json:
+                    try:
+                        return json.loads(repaired_json)
+                    except json.JSONDecodeError:
+                        print(f"[REPAIR] Failed to parse repaired JSON, returning empty dict")
+                        return {}
+                else:
+                    print(f"[REPAIR] Auto-repair failed for {file_path}")
+                    return {}
+            else:
+                print(f"Error loading {file_path}: {e}")
+                return {}
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
             return {}
@@ -44,6 +70,86 @@ class PhaseManager:
         except Exception as e:
             print(f"Error saving {file_path}: {e}")
             return False
+
+    def repair_json_file(self, file_path: str, error_message: str) -> Optional[str]:
+        """Repair JSON file using Claude AI
+
+        Args:
+            file_path: Path to corrupted JSON file
+            error_message: JSON decode error message
+
+        Returns:
+            Repaired JSON content as string, or None if repair failed
+        """
+        try:
+            # Create backup
+            backup_path = f"{file_path}.backup"
+            shutil.copy2(file_path, backup_path)
+            print(f"[REPAIR] Created backup: {backup_path}")
+
+            # Read corrupted content
+            with open(file_path, 'r', encoding='utf-8') as f:
+                corrupted_content = f.read()
+
+            # Generate repair prompt for Claude
+            repair_prompt = f"""Please fix this JSON syntax error. The file contains phase management data that needs to be valid JSON.
+
+Error: {error_message}
+
+Corrupted JSON content:
+```
+{corrupted_content}
+```
+
+Please fix the JSON syntax error and return ONLY the corrected JSON. Make sure to:
+1. Fix any missing quotes, commas, brackets, or braces
+2. Ensure proper JSON structure
+3. Preserve all the original data and structure
+4. Return only valid JSON (no explanations, just the JSON)
+
+Return ONLY the fixed JSON:"""
+
+            # Use ClaudeStreamer to repair
+            streamer = ClaudeStreamer(
+                permission_mode="acceptEdits",
+                output_format="json",
+                verbose=False
+            )
+
+            print(f"[REPAIR] Attempting to repair {file_path}...")
+            repaired_json, exit_code = streamer.get_response(repair_prompt)
+
+            if exit_code == 0 and repaired_json.strip():
+                # Validate the repaired JSON
+                try:
+                    json.loads(repaired_json)
+
+                    # Save repaired content
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write(repaired_json)
+
+                    print(f"[REPAIR] Successfully repaired {file_path}")
+                    return repaired_json
+
+                except json.JSONDecodeError as e:
+                    print(f"[REPAIR] Claude response still invalid JSON: {e}")
+                    print(f"[REPAIR] Claude response: {repaired_json[:200]}...")
+                    return None
+            else:
+                print(f"[REPAIR] Claude repair failed with exit code: {exit_code}")
+                return None
+
+        except Exception as e:
+            print(f"[REPAIR] Error during repair: {e}")
+            # Restore from backup if available
+            backup_path = f"{file_path}.backup"
+            if os.path.exists(backup_path):
+                try:
+                    shutil.copy2(backup_path, file_path)
+                    print(f"[REPAIR] Restored original file from backup")
+                except:
+                    pass
+            return None
 
     def get_all_plan_files(self) -> List[str]:
         """Get all plan JSON files (recursive scan, excluding phases.json and index.json)"""
@@ -298,6 +404,7 @@ class PhaseManager:
         leaf_phases = []
         processed_files = []
 
+        # Process individual leaf files
         for file_path in all_files:
             if not self.is_leaf_phase(file_path, all_files):
                 continue
@@ -318,6 +425,27 @@ class PhaseManager:
                         'duration': phase['duration'],
                         'status': phase.get('status', 'pending')
                     })
+
+        # Also check phases.json for individual phases that don't have individual files
+        phases_file = os.path.join(self.plan_dir, 'phases.json')
+        if os.path.exists(phases_file):
+            phases_data = self.load_json(phases_file)
+            phases = phases_data.get('phases', [])
+
+            for phase in phases:
+                phase_id = str(phase['id'])
+                individual_file = os.path.join(self.plan_dir, f"{phase_id}.json")
+
+                # Check if this phase is a leaf (no individual file exists)
+                if not os.path.exists(individual_file):
+                    if phase.get('duration') and self.needs_breakdown(phase.get('duration')):
+                        leaf_phases.append({
+                            'file': 'phases.json',
+                            'phase_id': phase_id,
+                            'title': phase['title'],
+                            'duration': phase['duration'],
+                            'status': phase.get('status', 'pending')
+                        })
 
         # Filter to show only top results (matches JavaScript limit)
         return leaf_phases[:limit]
