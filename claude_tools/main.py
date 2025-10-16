@@ -64,6 +64,66 @@ def break_main(args):
         sys.argv = original_argv
 
 
+def init_main(args):
+    """Handle init subcommand"""
+    # Import here to avoid circular imports
+    import importlib.util
+    import os
+
+    # Load init.py module dynamically to avoid keyword conflict
+    spec = importlib.util.spec_from_file_location("init_module", os.path.join(os.path.dirname(__file__), "init.py"))
+    init_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(init_module)
+
+    # Set sys.argv to pass arguments to init.py
+    original_argv = sys.argv[:]
+    sys.argv = ['init']
+    if args.plan_path:
+        sys.argv.append(args.plan_path)
+    if args.target_folder:
+        sys.argv.append(args.target_folder)
+
+    try:
+        # Initialize and run the system
+        init_system = init_module.InitializationSystem()
+        success = init_system.run_initialization(args.plan_path, args.target_folder)
+        return 0 if success else 1
+    except SystemExit as e:
+        return e.code
+    finally:
+        # Restore original argv
+        sys.argv = original_argv
+
+
+def run_main(args):
+    """Handle run subcommand"""
+    # Import here to avoid circular imports
+    import importlib.util
+    import os
+
+    # Load run.py module dynamically to avoid keyword conflict
+    spec = importlib.util.spec_from_file_location("run_module", os.path.join(os.path.dirname(__file__), "run.py"))
+    run_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(run_module)
+
+    # Set sys.argv to pass arguments to run.py
+    original_argv = sys.argv[:]
+    sys.argv = ['run']
+    if args.max_tasks:
+        sys.argv.extend(['--max-tasks', str(args.max_tasks)])
+
+    try:
+        # Initialize and run the system
+        task_system = run_module.TaskExecutionSystem(max_tasks=args.max_tasks)
+        success = task_system.run_task_execution(args.max_tasks)
+        return 0 if success else 1
+    except SystemExit as e:
+        return e.code
+    finally:
+        # Restore original argv
+        sys.argv = original_argv
+
+
 def gass_cli():
     """Main CLI entry point for gass command"""
     parser = argparse.ArgumentParser(
@@ -105,9 +165,36 @@ def gass_cli():
         help='Maximum iterations to prevent infinite loops (default: 50)'
     )
 
-    # Future subcommands (placeholders)
-    init_parser = subparsers.add_parser('init', help='Initialize project (coming soon)')
-    run_parser = subparsers.add_parser('run', help='Run automation (coming soon)')
+    # Init subcommand
+    init_parser = subparsers.add_parser(
+        'init',
+        help='Initialize project with comprehensive planning',
+        description="Project Initialization System - Comprehensive planning, database schema and structure generation",
+        epilog="Example: gass init @sample_prd.rbac myproject"
+    )
+    init_parser.add_argument(
+        'plan_path',
+        help='Path to PRD/plan file (supports @ notation for file references)'
+    )
+    init_parser.add_argument(
+        'target_folder',
+        nargs='?',
+        help='Target folder name for project (optional)'
+    )
+
+    # Run subcommand
+    run_parser = subparsers.add_parser(
+        'run',
+        help='Execute tasks with parallel processing and validation',
+        description="Task Execution System - Execute tasks with comprehensive planning, validation, and status management",
+        epilog="Example: gass run --max-tasks 3"
+    )
+    run_parser.add_argument(
+        '--max-tasks',
+        type=int,
+        default=5,
+        help='Maximum number of concurrent tasks (default: 5)'
+    )
 
     # Parse arguments
     args = parser.parse_args()
@@ -124,11 +211,9 @@ def gass_cli():
         elif args.command == 'break':
             return break_main(args)
         elif args.command == 'init':
-            print("[OK] Init command coming soon!")
-            return 0
+            return init_main(args)
         elif args.command == 'run':
-            print("[OK] Run command coming soon!")
-            return 0
+            return run_main(args)
         else:
             print(f"Unknown command: {args.command}")
             return 1

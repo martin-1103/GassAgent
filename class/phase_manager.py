@@ -245,8 +245,8 @@ class PhaseManager:
                     }
                     tasks.append(task)
 
-        # Sort by priority then by ID
-        tasks.sort(key=lambda x: (x['priority'], x['id']))
+        # Sort by priority only
+        tasks.sort(key=lambda x: x['priority'])
         return tasks
 
     
