@@ -1,54 +1,84 @@
 {
   "project": {
-    "title": "User Panel - MVP",
-    "description": "Simple user management panel for basic CRUD operations on users and roles with authentication and role-based access control",
+    "title": "API Management & Testing Platform",
+    "description": "Comprehensive API testing and management platform with visual flow builder, multi-protocol support, AI-native features, and dual interface (Web/Desktop)",
     "type": "web-app",
-    "totalPhases": 4,
-    "estimatedDuration": 9600,
-    "complexity": "low"
+    "totalPhases": 8,
+    "estimatedDuration": 7200,
+    "complexity": "enterprise"
   },
   "phases": [
     {
       "id": 1,
-      "title": "Setup and Authentication",
-      "description": "Week 1: Project foundation setup including database design, Express.js server configuration, Next.js frontend initialization, and core authentication system with JWT tokens and bcrypt password hashing.",
-      "status": "completed",
+      "title": "Foundation & Core Architecture",
+      "description": "Establish project structure, core architecture, database design, and basic authentication system. Setup development environment with React, Node.js backend, and essential tooling.",
+      "status": "pending",
       "priority": 1,
-      "duration": 2400,
+      "duration": 960,
       "dependencies": []
     },
     {
       "id": 2,
-      "title": "User Management Implementation",
-      "description": "Week 2: Complete user management backend APIs for CRUD operations, user profile management, user status control (active/inactive), and password reset functionality.",
+      "title": "Multi-Protocol API Engine",
+      "description": "Implement core API engine supporting REST (HTTP/S), gRPC (proto import & server reflection), and GraphQL. Build protocol adapters and unified request/response handling system.",
       "status": "pending",
-      "priority": 2,
-      "duration": 2400,
-      "dependencies": [
-        1
-      ]
+      "priority": 1,
+      "duration": 1200,
+      "dependencies": [1]
     },
     {
       "id": 3,
-      "title": "Role System Development",
-      "description": "Week 3: Implement role-based access control system including custom role creation, user-role assignment functionality, permission checking middleware, and access control enforcement.",
+      "title": "Visual Flow Builder Foundation",
+      "description": "Create drag-and-drop canvas interface using React and modern UI components. Implement basic flow nodes, connections, and data flow architecture. Build core flow execution engine.",
       "status": "pending",
       "priority": 2,
-      "duration": 2400,
-      "dependencies": [
-        2
-      ]
+      "duration": 960,
+      "dependencies": [2]
     },
     {
       "id": 4,
-      "title": "Testing & Deployment",
-      "description": "Week 4: Complete frontend development with Tailwind CSS, integrate all components, implement testing, and prepare for deployment. Build simple dashboard and finalize MVP features.",
+      "title": "Advanced Flow Features & Logic",
+      "description": "Implement advanced flow features including conditional logic, loops, delay nodes, and data chaining. Add assertion system, error handling, and step-by-step debugging capabilities.",
+      "status": "pending",
+      "priority": 2,
+      "duration": 720,
+      "dependencies": [3]
+    },
+    {
+      "id": 5,
+      "title": "Test Data Management & Execution",
+      "description": "Build comprehensive test data management system with generators, environment-specific data, and data persistence. Implement parallel execution, performance monitoring, and real-time status tracking.",
       "status": "pending",
       "priority": 3,
-      "duration": 2400,
-      "dependencies": [
-        3
-      ]
+      "duration": 720,
+      "dependencies": [4]
+    },
+    {
+      "id": 6,
+      "title": "AI-Native MCP Interface",
+      "description": "Implement Model Context Protocol (MCP) server and tools. Create AI agent discovery, natural language interface, and AI-powered debugging. Build integration with major AI platforms.",
+      "status": "pending",
+      "priority": 3,
+      "duration": 960,
+      "dependencies": [5]
+    },
+    {
+      "id": 7,
+      "title": "Management & Collaboration Features",
+      "description": "Develop user management, role-based access control, multi-project workspaces, and team collaboration features. Implement flow scheduling, version control, and activity logging.",
+      "status": "pending",
+      "priority": 4,
+      "duration": 960,
+      "dependencies": [6]
+    },
+    {
+      "id": 8,
+      "title": "Analytics, Reporting & Desktop App",
+      "description": "Build comprehensive analytics dashboard, detailed test reports, and trend analysis. Create Electron desktop application with localhost access and shared core logic. Implement CI/CD integration.",
+      "status": "pending",
+      "priority": 4,
+      "duration": 720,
+      "dependencies": [7]
     }
   ]
 }

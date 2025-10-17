@@ -27,6 +27,7 @@ claude_tools.egg-info/SOURCES.txt
 claude_tools.egg-info/dependency_links.txt
 claude_tools.egg-info/entry_points.txt
 claude_tools.egg-info/top_level.txt
+claude_tools/class/__init__.py
 claude_tools/class/claude_streamer.py
 claude_tools/class/phase_manager.py
 claude_tools/class/worker_monitor.py
@@ -37,12 +38,6 @@ claude_tools/prompt_template/project-structure-generator.md
 claude_tools/prompt_template/task-analyzer-executor.md
 claude_tools/prompt_template/task-status-updater.md
 claude_tools/prompt_template/task-validator.md
-claude_tools/prompt_tmp/breakdown_1.3_20251016_104615.txt
-claude_tools/prompt_tmp/breakdown_1_20251016_104025.txt
-claude_tools/prompt_tmp/breakdown_1_20251016_172806.txt
-claude_tools/prompt_tmp/breakdown_2_20251016_104025.txt
-claude_tools/prompt_tmp/breakdown_7_20251016_184020.txt
-claude_tools/prompt_tmp/plan-analyzer_20251016_183134.txt
-claude_tools/prompt_tmp/task-analyzer-executor_20251016_125627.txt
+claude_tools/prompt_tmp/breakdown_1.6_20251017_000439 copy.txt
 test/test_class.py
 test/test_phase_manager.py

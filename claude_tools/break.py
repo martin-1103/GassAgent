@@ -78,9 +78,9 @@ class BreakdownLoop:
         self.start_time = None
 
   
-    def _create_prompt_file(self, phase_info: Dict[str, Any]) -> str:
+    def _create_enhanced_prompt_file(self, phase_info: Dict[str, Any]) -> str:
         """
-        Create a compact prompt file for breakdown agent.
+        Create enhanced prompt file with strategic context for breakdown agent.
 
         Args:
             phase_info: Information about the phase to breakdown
@@ -91,35 +91,52 @@ class BreakdownLoop:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         prompt_file = self.prompt_tmp_dir / f"breakdown_{phase_info['phase_id']}_{timestamp}.txt"
 
-        # Read the plan-breakdown-analyzer agent template
+        # Read the enhanced plan-breakdown-analyzer agent template
         agent_content = self._get_agent_template()
 
-        # Create focused prompt for this specific phase
-        prompt = f"""You are plan-breakdown-analyzer agent.
+        # Build complete strategic context for this phase
+        strategic_context = self.phase_manager.build_strategic_context(phase_info['phase_id'])
+
+        # Format strategic context for prompt
+        formatted_context = self._format_strategic_context(strategic_context)
+
+        # Create enhanced prompt with strategic context
+        prompt = f"""You are plan-breakdown-analyzer agent with strategic context awareness.
 
 {agent_content}
 
-## TASK: Breakdown this phase
+## STRATEGIC CONTEXT (MANDATORY ANALYSIS REQUIRED)
 
-**Phase Information:**
+{formatted_context}
+
+## TASK: Strategic-Guided Breakdown
+
+**Target Phase Information:**
 - Phase ID: {phase_info['phase_id']}
 - Title: {phase_info['title']}
 - Duration: {phase_info['duration']} minutes
 - Status: {phase_info['status']}
-- Source File: {phase_info['file']}
+- Source File: @.ai/plan/{phase_info['file']}
 
-**Instructions:**
-1. This phase duration is >60 minutes and needs breakdown
-2. Create sub-phases with duration <60 minutes each
-3. Generate single file: {phase_info['phase_id']}.json
-4. Use dependency-based breakdown approach
-5. Include all sub-phases in the single file
-6. Set breakdown_complete: true when done
+**STRATEGIC BREAKDOWN INSTRUCTIONS:**
+1. **CONTEXT ANALYSIS**: Thoroughly analyze the strategic context provided above BEFORE breakdown
+2. **ALIGNMENT CHECK**: Ensure all sub-phases align with project vision and parent goals
+3. **BOUNDARY COMPLIANCE**: Respect all MUST/MUST_NOT constraints and scope limitations
+4. **COORDINATION PLANNING**: Include coordination phases for sibling alignment if needed
+5. **ARCHITECTURAL CONSISTENCY**: Maintain architectural principles throughout breakdown
+6. **DURATION CONSTRAINT**: Create sub-phases with duration <60 minutes each
+7. **SINGLE FILE OUTPUT**: Generate single file: {phase_info['phase_id']}.json
+8. **COMPLETE BREAKDOWN**: Include all sub-phases in the single file with strategic alignment
+9. **QUALITY VALIDATION**: Set breakdown_complete: true only after strategic validation
 
-**Output Location:**
-Save the result to: {self.plan_dir}/{phase_info['phase_id']}.json
+**OUTPUT REQUIREMENTS:**
+- Save to: {self.plan_dir}/{phase_info['phase_id']}.json
+- All sub-phases must support strategic goals from context analysis
+- Include coordination considerations if siblings exist
+- Respect boundary constraints from parent chain
+- Maintain architectural consistency
 
-Please proceed with the breakdown now.
+Please proceed with strategic-guided breakdown now.
 """
 
         try:
@@ -127,8 +144,141 @@ Please proceed with the breakdown now.
                 f.write(prompt)
             return str(prompt_file)
         except Exception as e:
-            print(f"✗ Error creating prompt file: {e}")
+            print(f"✗ Error creating enhanced prompt file: {e}")
             return ""
+
+    def _format_strategic_context(self, context: Dict[str, Any]) -> str:
+        """Format strategic context for prompt inclusion with expert analysis guidance"""
+        formatted = []
+
+        # Project Strategic DNA
+        dna = context.get('strategic_dna', {})
+        formatted.append("### PROJECT STRATEGIC DNA")
+        formatted.append(f"**Vision**: {dna.get('project_vision', 'Unknown')}")
+        formatted.append(f"**Goal**: {dna.get('project_goal', 'No goal specified')}")
+        formatted.append(f"**Type**: {dna.get('project_type', 'unknown')}")
+        formatted.append(f"**Complexity**: {dna.get('complexity', 'medium')}")
+
+        principles = dna.get('architectural_principles', [])
+        if principles:
+            formatted.append(f"**Architectural Principles**: {', '.join(principles)}")
+
+        success_factors = dna.get('critical_success_factors', [])
+        if success_factors:
+            formatted.append(f"**Critical Success Factors**: {', '.join(success_factors)}")
+
+        # Expert Analysis Context
+        formatted.append("\n### EXPERT ANALYSIS CONTEXT")
+        project_type = dna.get('project_type', '').lower()
+        complexity = dna.get('complexity', '').lower()
+
+        # Determine domain expert focus
+        domain_expert_focus = []
+        if 'web' in project_type or 'app' in project_type:
+            domain_expert_focus.extend(["Frontend Expert (UX/UI, Performance)", "Backend Expert (API, Business Logic)"])
+        if 'api' in project_type:
+            domain_expert_focus.extend(["API Expert (REST, Contracts)", "Integration Expert (Third-party APIs)"])
+        if 'enterprise' in complexity:
+            domain_expert_focus.extend(["Database Expert (Scalability, Performance)", "Testing Expert (Comprehensive Coverage)"])
+        if 'mobile' in project_type:
+            domain_expert_focus.extend(["Mobile Expert (Platform Guidelines)", "Performance Expert (Resource Optimization)"])
+
+        # Always include core experts
+        formatted.append("**Core Experts (Always Active)**:")
+        formatted.append("  - Performance Expert: Computational efficiency, scalability, resource optimization")
+        formatted.append("  - Security Expert: Security implications, vulnerability assessment, data protection")
+        formatted.append("  - Architecture Expert: Structural consistency, maintainability, design patterns")
+
+        # Add domain-specific experts
+        if domain_expert_focus:
+            formatted.append("**Domain Experts (Based on Project Type)**:")
+            for expert in domain_expert_focus:
+                formatted.append(f"  - {expert}")
+
+        # Expert priority concerns based on project characteristics
+        formatted.append("\n**Expert Priority Concerns**:")
+        if 'performance' in ' '.join(principles).lower() or 'scalability' in ' '.join(success_factors).lower():
+            formatted.append("  - PERFORMANCE Expert has HIGH priority (performance is critical success factor)")
+        if 'security' in ' '.join(principles).lower() or 'security' in ' '.join(success_factors).lower():
+            formatted.append("  - SECURITY Expert has HIGH priority (security is critical success factor)")
+        if 'enterprise' in complexity:
+            formatted.append("  - ARCHITECTURE Expert has HIGH priority (enterprise complexity requires strong structure)")
+            formatted.append("  - TESTING Expert has elevated priority (enterprise requires comprehensive coverage)")
+
+        # Parent Chain
+        parent_chain = context.get('parent_chain', [])
+        if parent_chain:
+            formatted.append("\n### PARENT CHAIN (Hierarchy of Goals)")
+            for parent in parent_chain:
+                level_indicator = "  " * parent.get('level', 0)
+                parent_id = parent.get('id', 'unknown')
+                if parent_id == 'project':
+                    # Project root - use phases.json
+                    formatted.append(f"{level_indicator}**Level {parent.get('level', 0)}**: @.ai/plan/phases.json - {parent.get('title', 'Unknown')}")
+                else:
+                    # Regular parent phase
+                    formatted.append(f"{level_indicator}**Level {parent.get('level', 0)}**: @.ai/plan/{parent_id}.json - {parent.get('title', 'Unknown')}")
+                formatted.append(f"{level_indicator}  Goal: {parent.get('goal', 'No goal specified')}")
+                if parent.get('deliverables'):
+                    formatted.append(f"{level_indicator}  Key Deliverables: {', '.join(parent['deliverables'][:3])}")
+
+        # Sibling Coordination
+        coordination = context.get('sibling_coordination', {})
+        if coordination.get('has_siblings'):
+            formatted.append("\n### SIBLING COORDINATION REQUIREMENTS")
+            coordination_points = coordination.get('coordination_points', [])
+            for point in coordination_points:
+                sibling_id = point.get('sibling_id', 'Unknown')
+                formatted.append(f"**Sibling @.ai/plan/{sibling_id}.json**: {point.get('sibling_title', 'Unknown')}")
+                formatted.append(f"  - Coordination Type: {point.get('coordination_type', 'unknown')}")
+                formatted.append(f"  - Notes: {point.get('dependency_notes', 'No coordination notes')}")
+
+            # Expert guidance for coordination
+            formatted.append("\n**Expert Coordination Guidance**:")
+            formatted.append("  - INTEGRATION Expert: Focus on API contracts and data flow compatibility")
+            formatted.append("  - ARCHITECTURE Expert: Ensure consistent patterns across sibling implementations")
+            formatted.append("  - PERFORMANCE Expert: Consider performance implications of coordination overhead")
+
+        # Boundary Constraints
+        constraints = context.get('boundary_constraints', {})
+        formatted.append("\n### BOUNDARY CONSTRAINTS")
+
+        must_include = constraints.get('must_include', [])
+        if must_include:
+            formatted.append("**MUST INCLUDE**: " + ", ".join(must_include))
+            formatted.append("**Expert Validation Required**: All experts must validate these requirements are met")
+
+        must_not_include = constraints.get('must_not_include', [])
+        if must_not_include:
+            formatted.append("**MUST NOT INCLUDE**: " + ", ".join(must_not_include))
+            formatted.append("**Expert Watch List**: Security and Architecture experts must monitor for violations")
+
+        scope_limits = constraints.get('scope_limits', [])
+        if scope_limits:
+            formatted.append("**SCOPE LIMITS**: " + ", ".join(scope_limits))
+            formatted.append("**Expert Focus**: Domain and Architecture experts should validate scope adherence")
+
+        # Current Phase Context
+        current = context.get('current_phase', {})
+        formatted.append(f"\n### CURRENT PHASE CONTEXT")
+        formatted.append(f"**Phase**: @.ai/plan/{current.get('id', 'unknown')}.json - {current.get('title', 'Unknown')}")
+        formatted.append(f"**Description**: {current.get('description', 'No description available')}")
+        if current.get('deliverables'):
+            formatted.append(f"**Expected Deliverables**: {', '.join(current['deliverables'])}")
+
+        # Expert-specific guidance for current phase
+        formatted.append("\n**Expert Analysis Focus for This Phase**:")
+        formatted.append("  - PERFORMANCE Expert: Analyze scalability and efficiency implications")
+        formatted.append("  - SECURITY Expert: Identify security risks and mitigation requirements")
+        formatted.append("  - ARCHITECTURE Expert: Validate structural consistency and integration points")
+        if 'database' in current.get('description', '').lower():
+            formatted.append("  - DATABASE Expert: Schema design and query optimization focus")
+        if 'api' in current.get('description', '').lower():
+            formatted.append("  - API Expert: Contract design and versioning considerations")
+        if 'test' in current.get('description', '').lower():
+            formatted.append("  - TESTING Expert: Test strategy and coverage requirements")
+
+        return "\n".join(formatted)
 
     def _get_agent_template(self) -> str:
         """Get the plan-breakdown-analyzer agent template."""
@@ -149,28 +299,31 @@ Please proceed with the breakdown now.
         except Exception as e:
             raise RuntimeError(f"Failed to read agent template {agent_file}: {e}")
 
-    def _call_breakdown_agent(self, phase_info: Dict[str, Any], worker_id: int) -> Dict[str, Any]:
+    def _call_enhanced_breakdown_agent(self, phase_info: Dict[str, Any], worker_id: int) -> Dict[str, Any]:
         """
-        Call breakdown agent via ClaudeStreamer with worker monitoring.
+        Call enhanced breakdown agent via ClaudeStreamer with strategic context and validation.
 
         Args:
             phase_info: Information about the phase to breakdown
             worker_id: ID of the worker processing this phase
 
         Returns:
-            Result dictionary with success status and details
+            Result dictionary with success status, validation results, and details
         """
         # Update worker status - starting phase
         phase_desc = f"{phase_info['phase_id']}: {phase_info['title']} ({phase_info['duration']} min)"
-        self.worker_monitor.update_worker(worker_id, f"Starting {phase_desc}", WorkerState.ACTIVE)
+        self.worker_monitor.update_worker(worker_id, f"Starting strategic analysis for {phase_desc}", WorkerState.ACTIVE)
 
-        # Create prompt file
-        prompt_file = self._create_prompt_file(phase_info)
+        # Build strategic context for validation
+        strategic_context = self.phase_manager.build_strategic_context(phase_info['phase_id'])
+
+        # Create enhanced prompt file with strategic context
+        prompt_file = self._create_enhanced_prompt_file(phase_info)
         if not prompt_file:
-            self.worker_monitor.set_worker_error(worker_id, "Failed to create prompt file")
+            self.worker_monitor.set_worker_error(worker_id, "Failed to create enhanced prompt file")
             return {
                 "success": False,
-                "error": "Failed to create prompt file",
+                "error": "Failed to create enhanced prompt file",
                 "phase_id": phase_info['phase_id']
             }
 
@@ -192,8 +345,8 @@ Please proceed with the breakdown now.
                 self.worker_monitor.update_worker(worker_id, clean_text, WorkerState.ACTIVE)
 
         try:
-            # Update worker status - calling Claude
-            self.worker_monitor.update_worker(worker_id, f"Calling Claude for {phase_info['phase_id']}", WorkerState.ACTIVE)
+            # Update worker status - calling Claude with strategic context
+            self.worker_monitor.update_worker(worker_id, f"Calling Claude with strategic context for {phase_info['phase_id']}", WorkerState.ACTIVE)
 
             # Use streaming version with callback (separate streamer instance)
             response_text, exit_code = worker_streamer.get_response_from_file_with_stream(
@@ -201,15 +354,29 @@ Please proceed with the breakdown now.
             )
 
             if exit_code == 0:
-                self.worker_monitor.set_worker_completed(worker_id, f"Completed {phase_info['phase_id']}")
-                success = True
+                self.worker_monitor.update_worker(worker_id, f"Validating breakdown for {phase_info['phase_id']}", WorkerState.ACTIVE)
+
+                # Validate the breakdown result against strategic context
+                validation_result = self._validate_breakdown_result(response_text, strategic_context, phase_info['phase_id'])
+
+                if validation_result["is_valid"]:
+                    self.worker_monitor.set_worker_completed(worker_id, f"Completed {phase_info['phase_id']} (Score: {validation_result['overall_score']})")
+                    success = True
+                    validation_passed = True
+                else:
+                    self.worker_monitor.set_worker_error(worker_id, f"Validation failed for {phase_info['phase_id']} (Score: {validation_result['overall_score']})")
+                    success = False
+                    validation_passed = False
+                    error_msg = f"Strategic validation failed: {', '.join(validation_result['recommendations'][:2])}"
             else:
                 self.worker_monitor.set_worker_error(worker_id, f"Claude error (exit code: {exit_code})")
                 error_msg = f"Claude returned exit code {exit_code}"
+                validation_passed = False
 
         except Exception as e:
             self.worker_monitor.set_worker_error(worker_id, f"Exception: {str(e)}")
             error_msg = f"Exception: {e}"
+            validation_passed = False
 
         finally:
             # Clean up prompt file
@@ -218,20 +385,76 @@ Please proceed with the breakdown now.
             except Exception:
                 pass
 
-        # Return result
-        if success:
+        # Return enhanced result with validation
+        if success and validation_passed:
             return {
                 "success": True,
                 "response": response_text,
                 "phase_id": phase_info['phase_id'],
-                "prompt_file": prompt_file
+                "validation": validation_result,
+                "strategic_context": strategic_context
             }
         else:
             return {
                 "success": False,
                 "error": error_msg,
                 "response": response_text,
-                "phase_id": phase_info['phase_id']
+                "phase_id": phase_info['phase_id'],
+                "validation": validation_result if 'validation_result' in locals() else None,
+                "strategic_context": strategic_context
+            }
+
+    def _validate_breakdown_result(self, response_text: str, strategic_context: Dict[str, Any], phase_id: str) -> Dict[str, Any]:
+        """
+        Validate breakdown result against strategic context using smart constraint engine.
+
+        Args:
+            response_text: The breakdown response text from Claude
+            strategic_context: The strategic context used for breakdown
+            phase_id: The phase ID for validation
+
+        Returns:
+            Validation result with scoring and recommendations
+        """
+        try:
+            # Try to parse response as JSON
+            import json
+            breakdown_result = json.loads(response_text)
+
+            # Use PhaseManager's validation system
+            validation = self.phase_manager.validate_breakdown_alignment(breakdown_result, strategic_context)
+
+            # Log validation results
+            if validation["is_valid"]:
+                print(f"✓ Phase {phase_id} validation PASSED (Score: {validation['overall_score']}/100)")
+            else:
+                print(f"✗ Phase {phase_id} validation FAILED (Score: {validation['overall_score']}/100)")
+                for rec in validation["recommendations"][:3]:  # Show top 3 recommendations
+                    print(f"  - {rec}")
+
+            return validation
+
+        except json.JSONDecodeError as e:
+            # JSON parsing failed - create validation result indicating format error
+            return {
+                "is_valid": False,
+                "strategic_alignment": {"passed": False, "issues": ["Invalid JSON format"]},
+                "boundary_compliance": {"passed": False, "issues": ["Cannot validate due to JSON error"]},
+                "coordination_check": {"passed": False, "issues": ["Cannot validate due to JSON error"]},
+                "architecture_consistency": {"passed": False, "issues": ["Cannot validate due to JSON error"]},
+                "overall_score": 0,
+                "recommendations": [f"JSON format error: {str(e)}"]
+            }
+        except Exception as e:
+            # Other validation errors
+            return {
+                "is_valid": False,
+                "strategic_alignment": {"passed": False, "issues": [f"Validation error: {str(e)}"]},
+                "boundary_compliance": {"passed": False, "issues": ["Validation failed"]},
+                "coordination_check": {"passed": False, "issues": ["Validation failed"]},
+                "architecture_consistency": {"passed": False, "issues": ["Validation failed"]},
+                "overall_score": 0,
+                "recommendations": [f"Validation error: {str(e)}"]
             }
 
     def _update_statistics(self, success: bool):
@@ -243,12 +466,31 @@ Please proceed with the breakdown now.
             self.failed_breakdowns += 1
 
     def _process_phase_worker(self, phase_info: Dict[str, Any], worker_id: int) -> Dict[str, Any]:
-        """Worker function to process a single phase with monitoring."""
-        # Call breakdown agent with worker ID for monitoring
-        result = self._call_breakdown_agent(phase_info, worker_id)
+        """Worker function to process a single phase with strategic context and validation."""
+        # Call enhanced breakdown agent with strategic context and worker ID for monitoring
+        result = self._call_enhanced_breakdown_agent(phase_info, worker_id)
 
-        # Update statistics
+        # Update statistics with validation awareness
         self._update_statistics(result["success"])
+
+        # Log detailed results for debugging
+        if result["success"]:
+            validation = result.get("validation", {})
+            print(f"✓ Worker {worker_id}: {phase_info['phase_id']} completed successfully")
+            print(f"  Validation Score: {validation.get('overall_score', 'N/A')}/100")
+
+            # Log key validation aspects
+            if validation:
+                for aspect in ["strategic_alignment", "boundary_compliance", "coordination_check", "architecture_consistency"]:
+                    if aspect in validation:
+                        status = "PASS" if validation[aspect]["passed"] else "FAIL"
+                        print(f"  {aspect.replace('_', ' ').title()}: {status}")
+        else:
+            print(f"✗ Worker {worker_id}: {phase_info['phase_id']} failed")
+            if "validation" in result and result["validation"]:
+                print(f"  Validation Issues: {len(result['validation']['recommendations'])} found")
+                for rec in result["validation"]["recommendations"][:2]:
+                    print(f"    - {rec}")
 
         # Set worker back to idle when done
         if result["success"]:
@@ -258,7 +500,7 @@ Please proceed with the breakdown now.
             import threading
             def delayed_idle():
                 import time
-                time.sleep(2)  # Show error for 2 seconds
+                time.sleep(3)  # Show error for 3 seconds to see validation details
                 self.worker_monitor.set_worker_idle(worker_id)
             threading.Thread(target=delayed_idle, daemon=True).start()
 

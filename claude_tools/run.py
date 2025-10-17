@@ -569,17 +569,17 @@ Execute task sekarang."""
 def main():
     """Main CLI interface."""
     parser = argparse.ArgumentParser(description="Task Execution System")
-    parser.add_argument("--max-tasks", type=int, default=5,
-                       help="Maximum number of concurrent tasks (default: 5)")
-
+    parser.add_argument("--workers", type=int, default=5,
+                       help="Number of parallel workers (default: 5)")
     args = parser.parse_args()
 
-    # Initialize task execution system
-    task_system = TaskExecutionSystem(max_tasks=args.max_tasks)
+    # Initialize task execution system with dynamic workers
+    workers = args.workers if hasattr(args, 'workers') and args.workers is not None else 5
+    task_system = TaskExecutionSystem(max_tasks=workers)
 
-    # Run the task execution
+    # Run the task execution with dynamic workers
     try:
-        success = task_system.run_task_execution(args.max_tasks)
+        success = task_system.run_task_execution(workers)
         sys.exit(0 if success else 1)
     except KeyboardInterrupt:
         print(f"\n\n[OK] Interrupted by user")

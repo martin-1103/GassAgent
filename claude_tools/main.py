@@ -109,13 +109,14 @@ def run_main(args):
     # Set sys.argv to pass arguments to run.py
     original_argv = sys.argv[:]
     sys.argv = ['run']
-    if args.max_tasks:
-        sys.argv.extend(['--max-tasks', str(args.max_tasks)])
+    if args.workers:
+        sys.argv.extend(['--workers', str(args.workers)])
 
     try:
-        # Initialize and run the system
-        task_system = run_module.TaskExecutionSystem(max_tasks=args.max_tasks)
-        success = task_system.run_task_execution(args.max_tasks)
+        # Initialize and run the system with dynamic workers
+        workers = args.workers if args.workers is not None else 5
+        task_system = run_module.TaskExecutionSystem(max_tasks=workers)
+        success = task_system.run_task_execution(workers)
         return 0 if success else 1
     except SystemExit as e:
         return e.code
@@ -187,13 +188,13 @@ def gass_cli():
         'run',
         help='Execute tasks with parallel processing and validation',
         description="Task Execution System - Execute tasks with comprehensive planning, validation, and status management",
-        epilog="Example: gass run --max-tasks 3"
+        epilog="Example: gass run --workers 3"
     )
     run_parser.add_argument(
-        '--max-tasks',
+        '--workers',
         type=int,
         default=5,
-        help='Maximum number of concurrent tasks (default: 5)'
+        help='Number of parallel workers for task execution (default: 5)'
     )
 
     # Parse arguments
