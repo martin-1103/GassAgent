@@ -473,7 +473,7 @@ Please proceed with status management now.
 
     def _create_task_execution_prompt(self, task_id: str) -> str:
         """Create enhanced prompt for task execution with context."""
-        prompt = f"""Dengan konteks lengkap dari file .ai/brain/tasks/{task_id}.md @cred.md , kerjakan task tersebut.
+        prompt = f"""Dengan konteks lengkap dari file .ai/brain/tasks/{task_id}.md dan @cred.md , kerjakan task tersebut.
 
 Project Structure: .ai/structure/structure.md
 Database Schema: .ai/schema/index.json
