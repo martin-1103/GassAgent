@@ -38,6 +38,7 @@ claude_tools/prompt_template/project-structure-generator.md
 claude_tools/prompt_template/task-analyzer-executor.md
 claude_tools/prompt_template/task-status-updater.md
 claude_tools/prompt_template/task-validator.md
-claude_tools/prompt_tmp/breakdown_1.6_20251017_000439 copy.txt
+claude_tools/prompt_tmp/task-analyzer-executor_20251017_134043.txt
+claude_tools/prompt_tmp/task-analyzer-executor_20251017_135219.txt
 test/test_class.py
 test/test_phase_manager.py

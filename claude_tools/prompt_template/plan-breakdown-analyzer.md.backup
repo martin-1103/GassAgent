@@ -169,48 +169,6 @@ Phase 2
   - **Priority 7-8**: Enhancement sub-phases that respect boundary constraints
   - **Priority 9+**: Optional sub-phases that align with project success factors
 
-#### Adaptive Description Guidelines for Sub-Phases
-**CRITICAL**: Generate context-appropriate sub-phase descriptions with AI-driven detail adjustment. For each sub-phase, intelligently assess and adapt the description granularity based on:
-
-**Context-Based Detail Assessment for Sub-Phases**:
-- **Sub-phase complexity and scope** - Higher complexity requires more specific guidance
-- **Implementation requirements** - Setup-heavy sub-phases need detailed technical components
-- **Integration complexity** - Complex integrations require detailed connectivity information
-- **Feature focus** - Feature-specific sub-phases may need more guidance than prescriptive details
-
-**Adaptive Description Principles for Sub-Phases**:
-1. **Foundation-heavy sub-phases** (setup, architecture, core infrastructure):
-   - Include specific technical components, tools, and setup requirements
-   - Detail core architectural decisions and technology choices
-   - Specify essential configuration and development environment setup
-   - Focus on establishing solid technical foundation for the sub-phase
-
-2. **Feature-focused sub-phases** (specific functionality implementation):
-   - Provide clear guidance on key outcomes and deliverables
-   - Emphasize user experience and functional requirements
-   - Include integration points with existing systems
-   - Balance specific requirements with implementation flexibility
-
-3. **Integration-heavy sub-phases** (connecting components, data flow, APIs):
-   - Detail connectivity requirements and data flow patterns
-   - Specify interface definitions and contract considerations
-   - Include testing and validation requirements
-   - Focus on system cohesion and operational integrity
-
-**Quality Criteria for Sub-Phase Descriptions**:
-- **Informative**: Sufficient detail for implementation guidance
-- **Actionable**: Clear understanding of expected deliverables
-- **Contextual**: Appropriate level of specificity for sub-phase complexity
-- **Flexible**: Allow implementation choices while maintaining clear objectives
-- **Strategic Alignment**: Descriptions must support parent phase goals and project vision
-
-**Examples of Adaptive Sub-Phase Descriptions**:
-- *High-Detail (Foundation Sub-Phase)*: "Establish comprehensive sub-phase architecture with Next.js 14 and TypeScript, configure Prisma ORM with PostgreSQL database schema for users/roles/permissions tables, implement JWT authentication with bcrypt password hashing, set up API routes structure (/api/auth, /api/users, /api/roles), configure development environment with ESLint/Prettier and testing framework"
-
-- *Guidance-Oriented (Feature Sub-Phase)*: "Build user management functionality with focus on intuitive admin interface, implement comprehensive CRUD operations with proper validation, create role assignment system with granular permissions, ensure responsive design and accessibility standards"
-
-- *Integration-Focused (Integration Sub-Phase)*: "Connect user authentication system with role-based access control, implement seamless data flow between user management and permission systems, create unified API interface for frontend consumption, establish proper error handling and security validation across all integration points"
-
 ## Output Format
 
 ### Single File Structure
@@ -317,16 +275,6 @@ Each breakdown creates ONE JSON file containing all sub-phases:
 - **Expert Documentation**: Document expert decisions, conflicts, and consensus rationale
 - **File Naming Convention**: Applied correctly using `{phase_id}.json` format
 - **Single File Organization**: All sub-phases contained in single structured file with expert validation
-
-### Sub-Phase Description Quality Standards
-- **Adaptive Granularity**: Each sub-phase description must appropriately match its complexity and scope
-- **Contextual Specificity**: Foundation sub-phases include technical details, feature sub-phases provide guidance, integration sub-phases detail connectivity
-- **Implementation Guidance**: Descriptions must provide sufficient information for developers to understand what to build
-- **Flexible Direction**: Allow implementation choices while maintaining clear objectives and outcomes
-- **Scope Alignment**: Description detail level must align with sub-phase duration and complexity
-- **Dependency Awareness**: Clearly reference and connect with sub-phase dependencies in descriptions
-- **Strategic Consistency**: All sub-phase descriptions must support parent phase goals and project vision
-- **Expert-Validated Quality**: Description quality must be validated by relevant experts (Architecture, Domain, Performance)
 
 ### CRITICAL: Expert Validation Requirements
 - **Performance Expert**: Must validate scalability, efficiency, and resource usage implications

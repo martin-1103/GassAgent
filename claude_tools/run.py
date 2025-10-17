@@ -101,13 +101,62 @@ class TaskExecutionSystem:
         except Exception as e:
             raise RuntimeError(f"Failed to read agent template {agent_file}: {e}")
 
-    def _create_prompt_file(self, agent_name: str, context: Dict[str, Any]) -> str:
+    def _load_project_structure(self) -> Dict[str, Any]:
+        """
+        Load project structure from .ai/structure/structure.md
+
+        Returns:
+            Dictionary containing project structure information
+        """
+        structure_file = Path(".ai/structure/structure.md")
+
+        if not structure_file.exists():
+            return {"content": "", "exists": False}
+
+        try:
+            with open(structure_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                return {
+                    "content": content,
+                    "exists": True,
+                    "file_path": str(structure_file)
+                }
+        except Exception as e:
+            print(f"[WARNING] Failed to load project structure: {e}")
+            return {"content": "", "exists": False, "error": str(e)}
+
+    def _load_database_schema(self) -> Dict[str, Any]:
+        """
+        Load database schema from .ai/schema/index.json
+
+        Returns:
+            Dictionary containing database schema information
+        """
+        schema_file = Path(".ai/schema/index.json")
+
+        if not schema_file.exists():
+            return {"content": {}, "exists": False}
+
+        try:
+            with open(schema_file, 'r', encoding='utf-8') as f:
+                content = json.load(f)
+                return {
+                    "content": content,
+                    "exists": True,
+                    "file_path": str(schema_file)
+                }
+        except Exception as e:
+            print(f"[WARNING] Failed to load database schema: {e}")
+            return {"content": {}, "exists": False, "error": str(e)}
+
+    def _create_prompt_file(self, agent_name: str, context: Dict[str, Any], strategic_context: Optional[Dict[str, Any]] = None) -> str:
         """
         Create a prompt file for specified agent.
 
         Args:
             agent_name: Name of the agent
             context: Context information for the agent
+            strategic_context: Strategic context from PhaseManager (optional)
 
         Returns:
             Path to created prompt file
@@ -121,31 +170,126 @@ class TaskExecutionSystem:
         # Create focused prompt for this specific agent
         if agent_name == "task-analyzer-executor":
             available_tasks = context.get('available_tasks', [])
+
+            # Load project structure and database schema
+            project_structure = self._load_project_structure()
+            database_schema = self._load_database_schema()
+
+            # Extract strategic context from the first task (all tasks should have similar project context)
+            task_strategic_context = strategic_context
+            if not task_strategic_context and available_tasks:
+                # Check if tasks have embedded strategic context
+                first_task = available_tasks[0]
+                if 'strategic_context' in first_task:
+                    task_strategic_context = first_task['strategic_context']
+
             tasks_json = json.dumps(available_tasks, indent=2)
 
-            prompt = f"""You are task-analyzer-executor agent.
+            # Format strategic context if available
+            strategic_context_text = ""
+            if task_strategic_context and isinstance(task_strategic_context, dict):
+                strategic_dna = task_strategic_context.get('strategic_dna', {}) or {}
+                parent_chain = task_strategic_context.get('parent_chain', []) or []
+                sibling_coord = task_strategic_context.get('sibling_coordination', {}) or {}
+                boundary_constraints = task_strategic_context.get('boundary_constraints', {}) or {}
 
-{agent_content}
+                strategic_context_text = f"""
 
-## TASK: Analyze available tasks and create context files
+## STRATEGIC CONTEXT (CRITICAL)
+This provides complete project context from PhaseManager for intelligent task analysis:
+
+### Project DNA
+- **Project Vision**: {strategic_dna.get('project_vision', 'Unknown')}
+- **Project Goal**: {strategic_dna.get('project_goal', 'No goal available')}
+- **Project Type**: {strategic_dna.get('project_type', 'unknown')}
+- **Complexity**: {strategic_dna.get('complexity', 'medium')}
+- **Total Phases**: {strategic_dna.get('total_phases', 0)}
+- **Estimated Duration**: {strategic_dna.get('estimated_duration', 0)} minutes
+
+### Architectural Principles
+{chr(10).join(f"- {principle}" for principle in strategic_dna.get('architectural_principles', []) if principle)}
+
+### Critical Success Factors
+{chr(10).join(f"- {factor}" for factor in strategic_dna.get('critical_success_factors', []) if factor)}
+
+### Parent Hierarchy Chain
+{chr(10).join(f"**Level {parent.get('level', 0)}**: {parent.get('title', 'Unknown')} - {parent.get('goal', 'No goal')}" for parent in parent_chain if isinstance(parent, dict))}
+
+### Sibling Coordination Requirements
+{chr(10).join(f"- {coord.get('sibling_title', 'Unknown')}: {coord.get('coordination_type', 'unknown')}" for coord in sibling_coord.get('coordination_points', []) if isinstance(coord, dict))}
+
+### Boundary Constraints
+**Must Include:**
+{chr(10).join(f"- {constraint}" for constraint in boundary_constraints.get('must_include', []) if constraint)}
+**Must Not Include:**
+{chr(10).join(f"- {constraint}" for constraint in boundary_constraints.get('must_not_include', []) if constraint)}
+**Scope Limits:**
+{chr(10).join(f"- {limit}" for limit in boundary_constraints.get('scope_limits', []) if limit)}
+"""
+
+            # Format project structure and database schema context
+            project_context_text = ""
+            if project_structure.get('exists'):
+                project_context_text += f"""
+
+## PROJECT STRUCTURE CONTEXT
+Current implementation patterns and architecture organization:
+
+{project_structure.get('content', '')}
+"""
+            else:
+                project_context_text += f"""
+
+## PROJECT STRUCTURE CONTEXT
+No project structure file found at .ai/structure/structure.md
+"""
+
+            if database_schema.get('exists'):
+                schema_content = database_schema.get('content', {})
+                schema_json = json.dumps(schema_content, indent=2)
+                project_context_text += f"""
+
+## DATABASE SCHEMA CONTEXT
+Current database schema and data models:
+
+```json
+{schema_json}
+```
+"""
+            else:
+                project_context_text += f"""
+
+## DATABASE SCHEMA CONTEXT
+No database schema file found at .ai/schema/index.json
+"""
+
+            prompt = f"""You are task-analyzer-executor agent with enhanced strategic context capabilities.
+
+{agent_content}{strategic_context_text}{project_context_text}
+
+## TASK: Analyze available tasks with complete pre-loaded context and create context files
 
 **Available Tasks:**
 ```json
 {tasks_json}
 ```
 
-**Instructions:**
-1. Load project context from:
-   - .ai/structure/structure.md
-   - .ai/schema/index.json
-   - .ai/plan/phases.json
-2. For each available task, create context file at: .ai/brain/tasks/[TASK_ID].md
-3. Update task status to "in-progress" using PhaseManager
-4. Follow all analysis and planning guidelines from the agent template
-5. Return JSON with task file paths created
+**CRITICAL INSTRUCTIONS:**
+1. **Use Pre-loaded Context**: All necessary context (strategic context, project structure, database schemas) is provided above. No additional file loading needed.
+2. **For Each Task**:
+   - Consider its position in the parent hierarchy chain
+   - Respect boundary constraints (MUST/MUST_NOT include)
+   - Ensure alignment with project vision and architectural principles
+   - Address sibling coordination requirements
+   - Analyze using provided project structure and database schema context
+3. **Create Context Files**: Save to .ai/brain/tasks/[TASK_ID].md with complete strategic context
+4. **Update Status**: Change task status to "in-progress" using PhaseManager
+5. **Return JSON**: Provide task file paths created
 
 **Output Location:**
 Save task context files to: .ai/brain/tasks/
+
+**Remember**: All context is pre-loaded and provided. Focus on expert analysis and planning, not data retrieval. Use the complete project hierarchy and constraints to ensure tasks align with project goals.
 
 Please proceed with task analysis now.
 """
@@ -215,7 +359,7 @@ Please proceed with status management now.
             print(f"[ERROR] Error creating prompt file: {e}")
             return ""
 
-    def _call_agent(self, agent_name: str, context: Dict[str, Any], worker_id: int) -> Dict[str, Any]:
+    def _call_agent(self, agent_name: str, context: Dict[str, Any], worker_id: int, strategic_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Call agent via ClaudeStreamer with worker monitoring.
 
@@ -223,6 +367,7 @@ Please proceed with status management now.
             agent_name: Name of the agent to call
             context: Context information for the agent
             worker_id: ID of the worker processing this agent
+            strategic_context: Strategic context from PhaseManager (optional)
 
         Returns:
             Result dictionary with success status and details
@@ -230,8 +375,8 @@ Please proceed with status management now.
         # Update worker status - starting agent
         self.worker_monitor.update_worker(worker_id, f"Starting {agent_name}", WorkerState.ACTIVE)
 
-        # Create prompt file
-        prompt_file = self._create_prompt_file(agent_name, context)
+        # Create prompt file with strategic context
+        prompt_file = self._create_prompt_file(agent_name, context, strategic_context)
         if not prompt_file:
             self.worker_monitor.set_worker_error(worker_id, "Failed to create prompt file")
             return {
@@ -304,10 +449,10 @@ Please proceed with status management now.
         else:
             self.failed_tasks += 1
 
-    def _process_agent_worker(self, agent_name: str, context: Dict[str, Any], worker_id: int) -> Dict[str, Any]:
+    def _process_agent_worker(self, agent_name: str, context: Dict[str, Any], worker_id: int, strategic_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Worker function to process a single agent with monitoring."""
-        # Call agent with worker ID for monitoring
-        result = self._call_agent(agent_name, context, worker_id)
+        # Call agent with worker ID for monitoring and strategic context
+        result = self._call_agent(agent_name, context, worker_id, strategic_context)
 
         # Update statistics
         self._update_statistics(result["success"])
@@ -454,8 +599,20 @@ Execute task sekarang."""
             tasks_to_process = available_tasks[:self.max_tasks]
             print(f"Processing {len(tasks_to_process)} tasks (max: {self.max_tasks})")
 
-            # Run task analyzer
-            analyzer_context = {'available_tasks': tasks_to_process}
+            # Build strategic context for each task
+            enhanced_tasks = []
+            for task in tasks_to_process:
+                try:
+                    strategic_context = self.phase_manager.build_strategic_context(task['id'])
+                    task['strategic_context'] = strategic_context
+                    enhanced_tasks.append(task)
+                    print(f"Built strategic context for task {task['id']}: {task['title']}")
+                except Exception as e:
+                    print(f"Warning: Failed to build strategic context for task {task['id']}: {e}")
+                    enhanced_tasks.append(task)  # Still include task without strategic context
+
+            # Run task analyzer with enhanced context
+            analyzer_context = {'available_tasks': enhanced_tasks}
             analyzer_result = self._process_agent_worker("task-analyzer-executor", analyzer_context, 1)
 
             if not analyzer_result["success"]:
