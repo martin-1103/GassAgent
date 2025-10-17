@@ -28,18 +28,30 @@ if env_file.exists():
 # Import sub-modules
 from . import init
 
-# Import break module dynamically to avoid keyword conflict
+# Import break and run modules dynamically to avoid keyword conflicts
 import importlib.util
 import os as _os
 
 def _import_break_module():
     break_file = _os.path.join(_os.path.dirname(__file__), "break.py")
-    spec = importlib.util.spec_from_file_location("break_module", break_file)
+    spec = importlib.util.spec_from_file_location("claude_tools.break", break_file)
     break_module = importlib.util.module_from_spec(spec)
+    # Add the parent package to the module's package context
+    break_module.__package__ = "claude_tools"
     spec.loader.exec_module(break_module)
     return break_module
 
+def _import_run_module():
+    run_file = _os.path.join(_os.path.dirname(__file__), "run.py")
+    spec = importlib.util.spec_from_file_location("claude_tools.run", run_file)
+    run_module = importlib.util.module_from_spec(spec)
+    # Add the parent package to the module's package context
+    run_module.__package__ = "claude_tools"
+    spec.loader.exec_module(run_module)
+    return run_module
+
 break_module = _import_break_module()
+run_module = _import_run_module()
 
 def main():
     """Main entry point for claude_tools module."""
@@ -48,6 +60,7 @@ def main():
         print("Commands:")
         print("  init <plan_file> [target_folder]  - Initialize project")
         print("  break [options]                   - Run breakdown loop")
+        print("  run [options]                     - Execute tasks")
         print("  help                              - Show this help")
         return 1
 
@@ -61,12 +74,17 @@ def main():
         # Remove 'claude_tools' from sys.argv and pass to break_module.main()
         sys.argv = ["break.py"] + sys.argv[2:]
         return break_module.main()
+    elif command == "run":
+        # Remove 'claude_tools' from sys.argv and pass to run_module.main()
+        sys.argv = ["run.py"] + sys.argv[2:]
+        return run_module.main()
     elif command == "help":
         # Show help message directly instead of calling main() again
         print("Usage: python -m claude_tools <command> [args...]")
         print("Commands:")
         print("  init <plan_file> [target_folder]  - Initialize project")
         print("  break [options]                   - Run breakdown loop")
+        print("  run [options]                     - Execute tasks")
         print("  help                              - Show this help")
         return 0
     else:

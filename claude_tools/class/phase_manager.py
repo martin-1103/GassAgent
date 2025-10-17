@@ -11,7 +11,7 @@ import os
 import re
 import shutil
 from typing import List, Dict, Any, Optional
-from claude_streamer import ClaudeStreamer
+from ..claude_streamer import ClaudeStreamer
 
 
 class PhaseManager:

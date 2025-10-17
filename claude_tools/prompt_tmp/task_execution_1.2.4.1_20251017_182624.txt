@@ -1,0 +1,9 @@
+Dengan konteks lengkap dari file .ai/brain/tasks/1.2.4.1.md dan @cred.md , kerjakan task tersebut.
+
+Project Structure: .ai/structure/structure.md
+Database Schema: .ai/schema/index.json
+
+Ikuti recommendations dan existing patterns yang sudah dianalisis.
+Max 300 lines per file dengan AI-friendly naming (maksudnya submodule gitu kalau lebih dari 300 line).
+
+Execute task sekarang.

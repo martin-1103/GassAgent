@@ -33,7 +33,7 @@ class_dir = os.path.join(current_dir, 'class')
 if class_dir not in sys.path:
     sys.path.insert(0, class_dir)
 
-from claude_streamer import ClaudeStreamer
+from .claude_streamer import ClaudeStreamer
 
 
 def default_finish_hook():
@@ -58,8 +58,10 @@ def break_main(args):
     import os
 
     # Load break.py module dynamically to avoid keyword conflict
-    spec = importlib.util.spec_from_file_location("break_module", os.path.join(os.path.dirname(__file__), "break.py"))
+    spec = importlib.util.spec_from_file_location("claude_tools.break", os.path.join(os.path.dirname(__file__), "break.py"))
     break_module = importlib.util.module_from_spec(spec)
+    # Add the parent package to the module's package context
+    break_module.__package__ = "claude_tools"
     spec.loader.exec_module(break_module)
 
     # Set sys.argv to pass arguments to break.py
@@ -88,8 +90,10 @@ def init_main(args):
     import os
 
     # Load init.py module dynamically to avoid keyword conflict
-    spec = importlib.util.spec_from_file_location("init_module", os.path.join(os.path.dirname(__file__), "init.py"))
+    spec = importlib.util.spec_from_file_location("claude_tools.init", os.path.join(os.path.dirname(__file__), "init.py"))
     init_module = importlib.util.module_from_spec(spec)
+    # Add the parent package to the module's package context
+    init_module.__package__ = "claude_tools"
     spec.loader.exec_module(init_module)
 
     # Set sys.argv to pass arguments to init.py
@@ -102,7 +106,9 @@ def init_main(args):
 
     try:
         # Initialize and run the system
-        init_system = init_module.InitializationSystem()
+        import importlib
+        init_system_class = importlib.import_module('.class.initialization_system', package='claude_tools').InitializationSystem
+        init_system = init_system_class()
         success = init_system.run_initialization(args.plan_path, args.target_folder)
         return 0 if success else 1
     except SystemExit as e:
@@ -119,8 +125,10 @@ def run_main(args):
     import os
 
     # Load run.py module dynamically to avoid keyword conflict
-    spec = importlib.util.spec_from_file_location("run_module", os.path.join(os.path.dirname(__file__), "run.py"))
+    spec = importlib.util.spec_from_file_location("claude_tools.run", os.path.join(os.path.dirname(__file__), "run.py"))
     run_module = importlib.util.module_from_spec(spec)
+    # Add the parent package to the module's package context
+    run_module.__package__ = "claude_tools"
     spec.loader.exec_module(run_module)
 
     # Set sys.argv to pass arguments to run.py
@@ -131,8 +139,10 @@ def run_main(args):
 
     try:
         # Initialize and run the system with dynamic workers
+        import importlib
+        task_system_class = importlib.import_module('.class.task_execution_system', package='claude_tools').TaskExecutionSystem
         workers = args.workers if args.workers is not None else 5
-        task_system = run_module.TaskExecutionSystem(max_tasks=workers)
+        task_system = task_system_class(max_tasks=workers)
         success = task_system.run_task_execution(workers)
         return 0 if success else 1
     except SystemExit as e:
