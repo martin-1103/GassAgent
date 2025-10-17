@@ -18,6 +18,7 @@ aaaa/commands/coreplan.md
 aaaa/commands/init.md
 aaaa/commands/run-tasks.md
 claude_tools/__init__.py
+claude_tools/__main__.py
 claude_tools/break.py
 claude_tools/init.py
 claude_tools/main.py
@@ -38,6 +39,7 @@ claude_tools/prompt_template/project-structure-generator.md
 claude_tools/prompt_template/task-analyzer-executor.md
 claude_tools/prompt_template/task-status-updater.md
 claude_tools/prompt_template/task-validator.md
+claude_tools/prompt_tmp/plan-analyzer_20251017_155355.txt
 claude_tools/prompt_tmp/task-analyzer-executor_20251017_134043.txt
 claude_tools/prompt_tmp/task-analyzer-executor_20251017_135219.txt
 test/test_class.py
